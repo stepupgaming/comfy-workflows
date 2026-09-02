@@ -262,6 +262,24 @@ export function createClient(opts: ClientOptions): ComfyClient {
       if (!submitRes.ok) {
         const body = (await submitRes.json().catch(() => ({}))) as Record<string, unknown>;
         if (body["node_errors"]) {
+          const normalized = normalizeNodeErrors(body);
+          if (normalized.length > 0) {
+            const first = normalized[0];
+            throw new ComfyError({
+              code: ErrorCodes.SubmitFailed,
+              message:
+                `Submit rejected: ${normalized.length} node error(s): ` +
+                normalized.map((e) => e.message).join("; "),
+              // Structured, per-node: every child carries nodeId/input/
+              // hint extracted from the server payload.
+              nodeErrors: normalized,
+              // Top-level convenience fields from the first node error.
+              nodeId: first.nodeId,
+              ...(first.input !== undefined ? { input: first.input } : {}),
+              ...(first.hint !== undefined ? { hint: first.hint } : {}),
+              details: body,
+            });
+          }
           throw new ComfyError({
             code: ErrorCodes.SubmitFailed,
             message: `Submit rejected: ${JSON.stringify(body["error"] ?? "node errors")}`,
@@ -403,6 +421,63 @@ function validateGraphForSubmit(input: RunInput, defs: NodeDefs): ReturnType<typ
   }
   const validation = validateGraph(lowered.graph, defs);
   return { ok: validation.ok, errors: validation.errors, warnings: validation.warnings };
+}
+
+/**
+ * Normalize ComfyUI's /prompt validation failure into structured ComfyErrors.
+ * The server payload looks like:
+ *   { error: {type, message, details}, node_errors: { "<nodeId>": {
+ *       errors: [{ type, message, details, extra_info: { input_name, ... } }] } } }
+ * Each node error becomes a ComfyError with nodeId/input filled from the
+ * payload; the raw server entry stays attached as details.
+ */
+export function normalizeNodeErrors(body: Record<string, unknown>): ComfyError[] {
+  const errors: ComfyError[] = [];
+  const nodeErrors = body["node_errors"] as
+    Record<string, { errors?: Array<Record<string, unknown>> }> | undefined;
+  if (nodeErrors !== undefined) {
+    for (const nodeId of Object.keys(nodeErrors).sort()) {
+      const entries = nodeErrors[nodeId]?.errors ?? [];
+      if (entries.length === 0) {
+        errors.push(
+          new ComfyError({
+            code: ErrorCodes.NodeExecutionError,
+            message: `Node ${nodeId} failed server validation`,
+            nodeId,
+            details: nodeErrors[nodeId],
+          }),
+        );
+        continue;
+      }
+      for (const entry of entries) {
+        const extraInfo = (entry["extra_info"] ?? {}) as Record<string, unknown>;
+        const inputName =
+          typeof extraInfo["input_name"] === "string" ? extraInfo["input_name"] : undefined;
+        // Server validation messages often embed the actionable part; pull
+        // well-known fields out of details when the server provides them.
+        const detailsText = typeof entry["details"] === "string" ? entry["details"] : undefined;
+        // "value: 'bad.ckpt' (ckpt_name)" — the rejected value is parseable.
+        const gotMatch: string | undefined =
+          detailsText !== undefined
+            ? (/value: '([^']*)'/.exec(detailsText)?.[1] ?? undefined)
+            : undefined;
+        errors.push(
+          new ComfyError({
+            code: ErrorCodes.SubmitFailed,
+            message: `Node ${nodeId}${inputName !== undefined ? ` input "${inputName}"` : ""}: ${
+              typeof entry["message"] === "string" ? entry["message"] : "failed server validation"
+            }${detailsText !== undefined && detailsText !== "" ? ` — ${detailsText}` : ""}`,
+            nodeId,
+            ...(inputName !== undefined ? { input: inputName } : {}),
+            ...(gotMatch !== undefined ? { got: gotMatch } : {}),
+            hint: detailsText !== undefined && detailsText !== "" ? detailsText : undefined,
+            details: { serverError: entry, nodeError: nodeErrors[nodeId] },
+          }),
+        );
+      }
+    }
+  }
+  return errors;
 }
 
 function hasAssets(g: Graph): boolean {

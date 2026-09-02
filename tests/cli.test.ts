@@ -170,6 +170,89 @@ describe("CLI", () => {
     expect(res.stderr).toContain("Environment drift");
   });
 
+  it("validate/run auto-fetch live defs from --url without --defs", async () => {
+    const { createServer } = await import("node:http");
+    let promptCount = 0;
+    let objectInfoCount = 0;
+    const liveObjectInfo = {
+      // NOT in the bundled core registry — only live defs can compile this.
+      LiveOnlyNode: {
+        input: { required: { value: ["INT", { default: 1, min: 0 }] } },
+        input_order: { required: ["value"] },
+        output: ["IMAGE"],
+        output_name: ["IMAGE"],
+        name: "Live Only",
+        category: "test",
+        output_node: false,
+      },
+    };
+    const server = createServer((req, res) => {
+      const url = req.url ?? "";
+      if (url.endsWith("/object_info")) {
+        objectInfoCount++;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify(liveObjectInfo));
+        return;
+      }
+      if (url.endsWith("/prompt")) {
+        promptCount++;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ prompt_id: "mock-live-run", number: 1 }));
+        return;
+      }
+      if (url.includes("/history/")) {
+        res.setHeader("Content-Type", "application/json");
+        res.end(
+          JSON.stringify({
+            "mock-live-run": { status: { status_str: "success", completed: true }, outputs: {} },
+          }),
+        );
+        return;
+      }
+      res.statusCode = 404;
+      res.end("not found");
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const port = (server.address() as { port: number }).port;
+    const url = `http://127.0.0.1:${port}`;
+
+    try {
+      const dir = mkdtempSync(join(tmpdir(), "comfy-cli-"));
+      const irPath = join(dir, "live.ir.json");
+      await (
+        await import("node:fs/promises")
+      ).writeFile(
+        irPath,
+        JSON.stringify({
+          irVersion: 1,
+          nodes: { n1: { type: "LiveOnlyNode", params: { value: 1 }, inputs: {} } },
+          outputs: [],
+        }),
+      );
+
+      // Bundled defs would fail with E_UNKNOWN_NODE_TYPE; live defs succeed —
+      // so passing proves the server's universe was used.
+      const v = await comfy(["validate", irPath, "--url", url]);
+      expect(v.code).toBe(0);
+      const vBody = jsonOf<{
+        ok: boolean;
+        local: { errors: unknown[] };
+        server: { mode?: string };
+      }>(v.stdout);
+      expect(vBody.ok).toBe(true);
+      expect(vBody.local.errors).toEqual([]);
+      expect(vBody.server.mode).toBe("local-against-live-defs");
+      expect(objectInfoCount).toBeGreaterThan(0);
+      expect(promptCount).toBe(0); // validate never executes
+
+      const r = await comfy(["run", irPath, "--url", url, "--out", join(dir, "out")]);
+      expect(r.code).toBe(0);
+      expect(promptCount).toBe(1); // exactly one queued execution
+    } finally {
+      server.close();
+    }
+  }, 30_000);
+
   it("--param binds template params, including bigint seeds", async () => {
     const dir = mkdtempSync(join(tmpdir(), "comfy-cli-"));
     const irPath = join(dir, "tpl.ir.json");

@@ -133,6 +133,47 @@ describe("custom-node codegen → import → emit → compile (synthetic, not in
     expect(result.json).toContain(`"${CUSTOM_CLASS}"`);
   }, 30_000);
 
+  it("codegen persists exact identifiers (incl. collision suffixes) and --registry consumes them", () => {
+    // Two classes that sanitize to the SAME identifier — one must get a suffix
+    // at generation time, and identifiers.json must record the exact result.
+    const defs = parseObjectInfo({
+      ...liveStyleObjectInfo(),
+      "My Node!": {
+        input: { required: {} },
+        output: ["IMAGE"],
+        output_name: ["IMAGE"],
+        name: "My Node",
+        category: "test/a",
+      },
+      "My-Node?": {
+        input: { required: {} },
+        output: ["MASK"],
+        output_name: ["MASK"],
+        name: "My Node 2",
+        category: "test/b",
+      },
+    } as never);
+    const out = generateNodeModules({ defs, objectInfoHash: "test", importsFrom: "comfy-sdk" });
+    const registrySrc = out.files.find((f) => f.path === "registry.ts")?.content ?? "";
+    // Both classes got distinct exported identifiers...
+    const [id1, id2] = [out.identifiers["My Node!"], out.identifiers["My-Node?"]];
+    expect(id1).not.toBe(id2);
+    expect(new Set([id1, id2]).size).toBe(2);
+    // ...both actually exported under those names...
+    expect(registrySrc).toContain(`export { ${id1} }`);
+    expect(registrySrc).toContain(`export { ${id2} }`);
+    // ...and the persisted map matches exactly.
+    const idFile = out.files.find((f) => f.path === "identifiers.json");
+    expect(idFile).toBeDefined();
+    const parsed = JSON.parse(idFile?.content ?? "{}") as {
+      format: string;
+      identifiers: Record<string, string>;
+    };
+    expect(parsed.format).toBe("comfy-node-identifiers");
+    expect(parsed.identifiers["My Node!"]).toBe(id1);
+    expect(parsed.identifiers["My-Node?"]).toBe(id2);
+  });
+
   it("emitted TS for registry-unknown custom nodes falls back to rawNode and still compiles", async () => {
     const defs = parseObjectInfo(liveStyleObjectInfo() as never);
     const outDir = mkdtempSync(join(tmpdir(), "comfy-emit-"));

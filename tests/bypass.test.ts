@@ -6,6 +6,7 @@ import { ErrorCodes } from "../src/errors.js";
 import { coreDefs } from "./helpers.js";
 import * as n from "./specs.js";
 import { importComfyJson } from "../src/import/index.js";
+import { compile } from "../src/compile/index.js";
 
 /** ckpt → lora(bypassed?) → pos-encode → sampler */
 function base() {
@@ -81,15 +82,24 @@ describe("bypass lowering (explicit mappings only — no type-match guessing)", 
     expect(graph.nodes[lora.id]).toBeUndefined();
   });
 
-  it("the importer derives bypassMap for unambiguous bypassed nodes", () => {
+  it("the importer does NOT derive bypassMap — mapping stays explicit-only", () => {
     // Editor-format fixture: bypassed LoraLoader (node 7) with model/clip
-    // connected; outputs MODEL/CLIP map 1:1 to same-typed inputs.
+    // connected. Even though exactly one same-typed input exists per output,
+    // the importer must not infer semantics it cannot prove. No bypassMap is
+    // set; compile reports E_UNRESOLVED_BYPASS for its consumers.
     const doc = JSON.parse(
       readFileSync(new URL("../fixtures/workflows/t2i.ui.json", import.meta.url), "utf8") as string,
     );
     const { graph } = importComfyJson(doc, coreDefs);
     expect(graph.nodes["7"].mode).toBe("bypassed");
-    expect(graph.nodes["7"].bypassMap).toEqual({ 0: "model", 1: "clip" });
+    expect(graph.nodes["7"].bypassMap).toBeUndefined();
+    const result = compile(graph, coreDefs);
+    expect(result.ok).toBe(false);
+    expect(
+      (result as { errors: Array<{ code: string }> }).errors.some(
+        (e) => e.code === "E_UNRESOLVED_BYPASS",
+      ),
+    ).toBe(true);
   });
 
   it("reports E_MUTED_CONSUMED when a muted node is still referenced", () => {

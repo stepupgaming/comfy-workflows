@@ -147,6 +147,24 @@ export function generateNodeModules(opts: CodegenOptions): CodegenResult {
       ) + "\n",
   });
 
+  // Exact classType -> exported-identifier map. Consumers of a generated
+  // directory (e.g. `comfy import --registry`) MUST use this map for emitted
+  // imports: sanitized identifiers can collide and get suffixes, so re-deriving
+  // names would produce imports that do not exist in the registry.
+  files.push({
+    path: "identifiers.json",
+    content:
+      serializeComfyJson(
+        {
+          format: "comfy-node-identifiers",
+          version: 1,
+          objectInfoHash: opts.objectInfoHash,
+          identifiers,
+        },
+        2,
+      ) + "\n",
+  });
+
   // Catalog (grep-able node discovery) + NODES.md.
   const catalog = buildCatalog(defs);
   files.push({ path: "catalog.json", content: serializeComfyJson(catalog, 2) + "\n" });

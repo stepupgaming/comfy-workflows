@@ -409,6 +409,64 @@ describe("runtime client", () => {
     }
   });
 
+  it("normalizes server node_errors into structured ComfyError fields", async () => {
+    const comfy = mockComfy();
+    const client = createClient({ url: "http://mock", ...comfy });
+    const graph = instantiateTemplate(
+      textToImage({ checkpoint: "v1-5-pruned-emaonly.safetensors", positivePrompt: "x", seed: 1n }),
+    );
+    // Replace /prompt with ComfyUI's real validation-failure shape (captured
+    // verbatim from a live run against VideoHelperSuite).
+    let calls = 0;
+    const fetchImpl = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/prompt")) {
+        calls++;
+        return new Response(
+          JSON.stringify({
+            error: {
+              type: "prompt_outputs_failed_validation",
+              message: "Prompt outputs failed validation",
+            },
+            node_errors: {
+              n1: {
+                errors: [
+                  {
+                    type: "value_not_in_list",
+                    message: "Value not in list",
+                    details: "value: 'bad.ckpt' (ckpt_name)",
+                    extra_info: { input_name: "ckpt_name" },
+                  },
+                ],
+              },
+            },
+          }),
+          { status: 400 },
+        );
+      }
+      return (comfy.fetchImpl as typeof fetch)(input, init);
+    }) as typeof fetch;
+    const authClient = createClient({ url: "http://mock", fetchImpl });
+
+    let caught: import("../src/errors.js").ComfyError | undefined;
+    try {
+      await authClient.run({ kind: "graph", graph });
+    } catch (e) {
+      caught = e as import("../src/errors.js").ComfyError;
+    }
+    expect(caught).toBeDefined();
+    expect(caught?.code).toBe("E_SUBMIT_FAILED");
+    // Structured fields from the server payload — not buried in details.
+    expect(caught?.nodeId).toBe("n1");
+    expect(caught?.nodeErrors).toHaveLength(1);
+    const ne = caught?.nodeErrors?.[0].toJSON();
+    expect(ne?.nodeId).toBe("n1");
+    expect(ne?.input).toBe("ckpt_name");
+    expect(ne?.got).toBe("bad.ckpt");
+    expect(ne?.hint).toContain("bad.ckpt");
+    expect(calls).toBe(1); // submit attempted exactly once, then structured failure
+  });
+
   it("local defs produce structured errors before any network call", async () => {
     const comfy = mockComfy();
     const client = createClient({ url: "http://mock", ...comfy });

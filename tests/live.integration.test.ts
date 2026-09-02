@@ -59,7 +59,9 @@ d("live integration (COMFY_URL)", () => {
     const liveDefs = parseObjectInfo((await client.objectInfo()) as never);
     const liveInfo = (await client.objectInfo()) as RawInfo;
     const ckptOptions =
-      (liveInfo["CheckpointLoaderSimple"]?.input?.required?.["ckpt_name"] as [string[]] | undefined)?.[0] ?? [];
+      (
+        liveInfo["CheckpointLoaderSimple"]?.input?.required?.["ckpt_name"] as [string[]] | undefined
+      )?.[0] ?? [];
 
     const workflowJson =
       ckptOptions.length > 0
@@ -129,16 +131,19 @@ d("live integration (COMFY_URL)", () => {
     expect(imported.diagnostics).toEqual([]);
 
     const validation = await client.validate({ kind: "graph", graph: imported.graph }, liveDefs);
-    expect(validation.ok, JSON.stringify({ errors: validation.errors, server: validation.serverResponse })).toBe(
-      true,
-    );
+    expect(
+      validation.ok,
+      JSON.stringify({ errors: validation.errors, server: validation.serverResponse }),
+    ).toBe(true);
   });
 
   it("submits via /prompt, completes over WS/history, and retrieves artifacts", async () => {
     const liveInfo = (await client.objectInfo()) as RawInfo;
     const liveDefs = parseObjectInfo(liveInfo as never);
     const ckptOptions =
-      (liveInfo["CheckpointLoaderSimple"]?.input?.required?.["ckpt_name"] as [string[]] | undefined)?.[0] ?? [];
+      (
+        liveInfo["CheckpointLoaderSimple"]?.input?.required?.["ckpt_name"] as [string[]] | undefined
+      )?.[0] ?? [];
 
     const outDir = mkdtempSync(join(tmpdir(), "comfy-live-"));
     const events: string[] = [];
@@ -149,7 +154,10 @@ d("live integration (COMFY_URL)", () => {
       // lossless >2^53 seed reaches the live server byte-exact.
       const g = workflow("live-t2i");
       const ckpt = g.add(generated.CheckpointLoaderSimple, { ckpt_name: ckptOptions[0] });
-      const pos = g.add(generated.CLIPTextEncode, { text: "a single red dot on white", clip: ckpt.CLIP });
+      const pos = g.add(generated.CLIPTextEncode, {
+        text: "a single red dot on white",
+        clip: ckpt.CLIP,
+      });
       const neg = g.add(generated.CLIPTextEncode, { text: "", clip: ckpt.CLIP });
       const lat = g.add(generated.EmptyLatentImage, { width: 64, height: 64, batch_size: 1 });
       const ks = g.add(generated.KSampler, {

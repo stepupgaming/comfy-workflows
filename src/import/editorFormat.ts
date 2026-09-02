@@ -284,28 +284,15 @@ export function importWorkflowJson(json: unknown, defs?: NodeDefs): EditorImport
     if (mapped && g.nodes[mapped]) g.nodes[mapped].params["value"] = value;
   }
 
-  // Fourth pass: derive bypassMap for bypassed nodes. The compiler never
-  // guesses pass-through semantics, so an imported bypassed node carries an
-  // explicit, inspectable mapping derived here: output slot → the single
-  // connected input of the same declared type, when unambiguous. Ambiguous
-  // cases are left unmapped and reported by compile as E_UNRESOLVED_BYPASS.
-  if (defs !== undefined) {
-    for (const node of Object.values(g.nodes)) {
-      if (node.mode !== "bypassed") continue;
-      const def = defs[node.type];
-      if (!def) continue;
-      const outTypes = def.outputs.map((o) => o.type);
-      const derived: Record<number, string> = {};
-      for (let slot = 0; slot < outTypes.length; slot++) {
-        const matches = def.inputs.filter(
-          (i) => i.kind === "connection" && i.type === outTypes[slot] && i.name in node.inputs,
-        );
-        if (matches.length === 1) derived[slot] = matches[0].name;
-      }
-      if (Object.keys(derived).length > 0) node.bypassMap = derived;
-    }
-  }
-
+  // Bypass mappings are NOT derived here. Inferring "output slot → the single
+  // same-typed connected input" would merely move the prohibited type-match
+  // heuristic from the compiler into the importer — Comfy's actual bypass
+  // semantics are frontend/node-specific and this importer has no proof of
+  // them. Bypassed nodes are imported WITHOUT bypassMap; consumers of their
+  // outputs fail compilation with E_UNRESOLVED_BYPASS unless the user (or a
+  // future importer with proven frontend semantics) supplies the mapping
+  // explicitly. The original editor JSON remains in node.source for manual
+  // rewiring.
   declareDefaultOutputs(g, defs);
   void formatNameCheck(formatName);
   return { graph: g, diagnostics };

@@ -1,0 +1,31 @@
+{
+  "format": "comfy-node-identifiers",
+  "version": 1,
+  "objectInfoHash": "a765285a89bbcdfc58054e715699443e9c764fdc41ca83512c89e2e4177baed3",
+  "identifiers": {
+    "CLIPSetLastLayer": "CLIPSetLastLayer",
+    "CLIPTextEncode": "CLIPTextEncode",
+    "ControlNetApplyAdvanced": "ControlNetApplyAdvanced",
+    "ImageScale": "ImageScale",
+    "ImageUpscaleWithModel": "ImageUpscaleWithModel",
+    "LoadImage": "LoadImage",
+    "PadImageForOutpainting": "PadImageForOutpainting",
+    "PreviewImage": "PreviewImage",
+    "SaveImage": "SaveImage",
+    "EmptyLatentImage": "EmptyLatentImage",
+    "LatentUpscale": "LatentUpscale",
+    "LatentUpscaleBy": "LatentUpscaleBy",
+    "VAEDecode": "VAEDecode",
+    "VAEEncode": "VAEEncode",
+    "VAEEncodeForInpaint": "VAEEncodeForInpaint",
+    "CheckpointLoaderSimple": "CheckpointLoaderSimple",
+    "ControlNetLoader": "ControlNetLoader",
+    "LoraLoader": "LoraLoader",
+    "UpscaleModelLoader": "UpscaleModelLoader",
+    "GrowMask": "GrowMask",
+    "LoadImageMask": "LoadImageMask",
+    "KSampler": "KSampler",
+    "KSamplerAdvanced": "KSamplerAdvanced",
+    "Note": "Note"
+  }
+}

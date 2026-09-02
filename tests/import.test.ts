@@ -25,7 +25,7 @@ describe("API-format import", () => {
     expect(Object.keys(v1.graph.nodes).sort()).toEqual(Object.keys(v04.graph.nodes).sort());
     expect(v1.graph.nodes["8"].params["seed"]).toBe(987654321);
     expect(v1.graph.nodes["7"].mode).toBe("bypassed");
-    expect(v1.graph.nodes["7"].bypassMap).toEqual({ 0: "model", 1: "clip" });
+    expect(v1.graph.nodes["7"].bypassMap).toBeUndefined();
     expect(v1.graph.nodes["2"].inputs["clip"]).toEqual({ node: "7", out: 1 });
     // v1 records its schema version in the source metadata.
     expect(v1.graph.nodes["8"].source?.format).toBe("comfy-workflow-v1");
@@ -111,7 +111,22 @@ describe("editor-format import", () => {
     expect(outNodes).not.toContain("9"); // Note has no outputs → not an output
   });
 
-  it("lowers bypass + drops muted on compile, matching Comfy export semantics", () => {
+  it("reports E_UNRESOLVED_BYPASS for the bypassed lora; explicit mapping resolves it; muted still dropped", () => {
+    // New policy: the importer does not infer bypass semantics. Compilation
+    // of the raw import fails with a structured E_UNRESOLVED_BYPASS...
+    const failed = compile(graph, coreDefs);
+    expect(failed.ok).toBe(false);
+    const unresolved = (
+      failed as { errors: Array<{ code: string; nodeId?: string }> }
+    ).errors.filter((e) => e.code === "E_UNRESOLVED_BYPASS");
+    expect(unresolved.length).toBeGreaterThan(0);
+    expect(unresolved.every((e) => e.nodeId === "7")).toBe(true);
+
+    // ...and once the user supplies the explicit mapping (what Comfy's
+    // frontend would do for this loader), compilation succeeds: model/clip
+    // pass through the checkpoint, the muted preview is dropped, and the
+    // primitive-derived seed survives.
+    graph.nodes["7"].bypassMap = { 0: "model", 1: "clip" };
     const result = compile(graph, coreDefs);
     if (!result.ok)
       throw new Error(`compile failed: ${result.errors.map((e) => e.message).join("; ")}`);

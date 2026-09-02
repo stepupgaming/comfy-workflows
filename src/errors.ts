@@ -65,6 +65,19 @@ export interface ComfyErrorFields {
   details?: unknown;
 }
 
+export interface ComfyErrorFields {
+  code: ErrorCode;
+  message: string;
+  hint?: string;
+  nodeId?: string;
+  input?: string;
+  expected?: string;
+  got?: string;
+  allowed?: string[];
+  /** Original server payload, when applicable. */
+  details?: unknown;
+}
+
 export class ComfyError extends Error {
   readonly code: ErrorCode;
   readonly nodeId?: string;
@@ -74,8 +87,10 @@ export class ComfyError extends Error {
   readonly allowed?: string[];
   readonly hint?: string;
   readonly details?: unknown;
+  /** Per-node child errors (e.g. normalized ComfyUI /prompt node_errors). */
+  readonly nodeErrors?: ComfyError[];
 
-  constructor(fields: ComfyErrorFields) {
+  constructor(fields: ComfyErrorFields & { nodeErrors?: ComfyError[] }) {
     super(fields.message);
     this.name = "ComfyError";
     this.code = fields.code;
@@ -86,10 +101,11 @@ export class ComfyError extends Error {
     this.allowed = fields.allowed;
     this.hint = fields.hint;
     this.details = fields.details;
+    this.nodeErrors = fields.nodeErrors;
   }
 
   /** Plain-object form, suitable for JSON logs and agent consumption. */
-  toJSON(): ComfyErrorFields {
+  toJSON(): ComfyErrorFields & { nodeErrors?: ComfyErrorFields[] } {
     return {
       code: this.code,
       message: this.message,
@@ -100,6 +116,9 @@ export class ComfyError extends Error {
       got: this.got,
       allowed: this.allowed,
       details: this.details,
+      ...(this.nodeErrors !== undefined
+        ? { nodeErrors: this.nodeErrors.map((e) => e.toJSON()) }
+        : {}),
     };
   }
 }

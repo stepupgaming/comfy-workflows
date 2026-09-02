@@ -158,6 +158,43 @@ async function loadDefsAny(defsPath: string | undefined): Promise<NodeDefs> {
   return (await loadDefsSources(defsPath)).defs;
 }
 
+/**
+ * Resolve defs for commands that talk to a server: an explicit --defs wins;
+ * otherwise, when --url is present, fetch THAT server's /object_info so
+ * installed custom nodes need no redundant flag. Falls back to the bundled
+ * defs only when neither is available.
+ */
+async function loadDefsForServer(
+  defsPath: string | undefined,
+  url: string | undefined,
+  client: ReturnType<typeof createClient> | undefined,
+): Promise<{ defs: NodeDefs; objectInfoHash?: string; source: "defs-flag" | "live" | "bundled" }> {
+  if (defsPath !== undefined) {
+    const s = await loadDefsSources(defsPath);
+    return { ...s, source: "defs-flag" };
+  }
+  if (url !== undefined && client !== undefined) {
+    try {
+      const live = await client.objectInfo();
+      return {
+        defs: parseObjectInfo(live as never),
+        objectInfoHash: hashObjectInfo(live),
+        source: "live",
+      };
+    } catch (e) {
+      process.stderr.write(
+        JSON.stringify({
+          warning: "E_LIVE_DEFS_UNAVAILABLE",
+          message:
+            `Could not fetch /object_info from ${url} for live defs ` +
+            `(${e instanceof Error ? e.message : String(e)}); falling back to bundled core defs.`,
+        }) + "\n",
+      );
+    }
+  }
+  return { ...bundledDefsWithHash(), source: "bundled" };
+}
+
 async function loadDefsSources(
   defsPath: string | undefined,
 ): Promise<{ defs: NodeDefs; objectInfoHash?: string }> {
@@ -370,11 +407,27 @@ async function cmdImport(
         defs?: NodeDefs;
       };
       const classes = new Set(Object.keys(json.defs ?? {}));
+      // Use the EXACT classType -> identifier map persisted by codegen. Sanitized
+      // names can collide and get suffixes at generation time, so re-deriving
+      // them here would emit imports that do not exist in the registry.
+      const identifiersPath = join(registryDir, "identifiers.json");
+      let identifiers: ReadonlyMap<string, string>;
+      try {
+        const idents = JSON.parse(await readFile(identifiersPath, "utf8")) as {
+          identifiers?: Record<string, string>;
+        };
+        identifiers = new Map(Object.entries(idents.identifiers ?? {}));
+      } catch {
+        throw new Error(
+          `Registry directory ${registryDir} has no identifiers.json — regenerate it with ` +
+            "`comfy codegen` so emitted imports use the exact generated names.",
+        );
+      }
       const rel = path
         .relative(path.dirname(path.resolve(tsPath)), join(registryDir, "registry.js"))
         .replaceAll("\\", "/");
       const specifier = rel.startsWith(".") ? rel : `./${rel}`;
-      registries = [{ specifier, classes }];
+      registries = [{ specifier, classes, identifiers }];
       summary["registry"] = specifier;
     }
     await writeFile(tsPath, emitTs(graph, { defs, registries: registries as never }), "utf8");
@@ -512,7 +565,12 @@ async function cmdCompile(
     throw new Error(
       "Usage: comfy compile <workflow.ts | graph.ir.json> [-o out.api.json] [--lock comfy.lock.json]",
     );
-  const defsSources = await loadDefsSources(flag(flags, "defs"));
+  const url = flag(flags, "url");
+  const client = url !== undefined ? createClient({ url }) : undefined;
+  const defsSources = await loadDefsForServer(flag(flags, "defs"), url, client);
+  if (defsSources.source === "live") {
+    process.stderr.write(JSON.stringify({ info: "defs", source: "live", url }) + "\n");
+  }
   const defs = defsSources.defs;
   const graph = await graphFromInput(input, parseParams(flagList(flags, "param")), defs);
   await warnLockDrift(defsSources, flag(flags, "lock"), {});
@@ -562,15 +620,18 @@ async function cmdValidate(
     throw new Error(
       "Usage: comfy validate <file> [--url URL] [--defs defs.json] [--lock comfy.lock.json]",
     );
-  const defsSources = await loadDefsSources(flag(flags, "defs"));
+  const url = flag(flags, "url");
+  const client = url !== undefined ? createClient({ url }) : undefined;
+  const defsSources = await loadDefsForServer(flag(flags, "defs"), url, client);
+  if (defsSources.source === "live") {
+    process.stderr.write(JSON.stringify({ info: "defs", source: "live", url }) + "\n");
+  }
   const defs = defsSources.defs;
   const graph = await graphFromInput(input, parseParams(flagList(flags, "param")), defs);
   const result = compile(graph, defs);
   const errorJson = () => (result.ok ? [] : result.errors.map((e) => e.toJSON()));
   const warningJson = () => result.warnings.map((e) => e.toJSON());
-  const url = flag(flags, "url");
-  if (url !== undefined) {
-    const client = createClient({ url });
+  if (url !== undefined && client !== undefined) {
     await warnLockDrift(defsSources, flag(flags, "lock"), { defsUrl: url, client });
     const server = await client.validate({ kind: "graph", graph });
     process.stdout.write(
@@ -603,8 +664,11 @@ async function cmdRun(
       "Usage: comfy run <file> --url URL [--param k=v ...] [--out outdir] [--defs defs.json] [--lock comfy.lock.json]",
     );
   }
-  const defsSources = await loadDefsSources(flag(flags, "defs"));
   const client = createClient({ url });
+  const defsSources = await loadDefsForServer(flag(flags, "defs"), url, client);
+  if (defsSources.source === "live") {
+    process.stderr.write(JSON.stringify({ info: "defs", source: "live", url }) + "\n");
+  }
   await warnLockDrift(defsSources, flag(flags, "lock"), { defsUrl: url, client });
   const graph = await graphFromInput(
     input,
