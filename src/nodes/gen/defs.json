@@ -1,0 +1,1091 @@
+{
+  "format": "comfy-node-defs",
+  "version": 1,
+  "objectInfoHash": "a765285a89bbcdfc58054e715699443e9c764fdc41ca83512c89e2e4177baed3",
+  "defs": {
+    "CheckpointLoaderSimple": {
+      "classType": "CheckpointLoaderSimple",
+      "displayName": "Load Checkpoint",
+      "category": "loaders",
+      "inputs": [
+        {
+          "name": "ckpt_name",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": [
+            "v1-5-pruned-emaonly.safetensors",
+            "sd_xl_base_1.0.safetensors",
+            "flux1-dev.safetensors"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "MODEL"
+        },
+        {
+          "index": 1,
+          "type": "CLIP"
+        },
+        {
+          "index": 2,
+          "type": "VAE"
+        }
+      ],
+      "outputNode": false,
+      "description": "Loads a diffusion model checkpoint (diffusers or original format).",
+      "pythonModule": "nodes.py"
+    },
+    "LoraLoader": {
+      "classType": "LoraLoader",
+      "displayName": "Load LoRA",
+      "category": "loaders",
+      "inputs": [
+        {
+          "name": "model",
+          "kind": "connection",
+          "type": "MODEL",
+          "required": true
+        },
+        {
+          "name": "clip",
+          "kind": "connection",
+          "type": "CLIP",
+          "required": true
+        },
+        {
+          "name": "lora_name",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["lora1.safetensors", "lora2.safetensors", "detail_tweaker.safetensors"]
+        },
+        {
+          "name": "strength_model",
+          "kind": "float",
+          "type": "FLOAT",
+          "required": true,
+          "min": -20,
+          "max": 20,
+          "step": 0.01,
+          "default": 1
+        },
+        {
+          "name": "strength_clip",
+          "kind": "float",
+          "type": "FLOAT",
+          "required": true,
+          "min": -20,
+          "max": 20,
+          "step": 0.01,
+          "default": 1
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "MODEL"
+        },
+        {
+          "index": 1,
+          "type": "CLIP"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "CLIPTextEncode": {
+      "classType": "CLIPTextEncode",
+      "displayName": "CLIP Text Encode (Prompt)",
+      "category": "conditioning",
+      "inputs": [
+        {
+          "name": "text",
+          "kind": "string",
+          "type": "STRING",
+          "required": true,
+          "multiline": true,
+          "dynamicPrompts": true,
+          "default": ""
+        },
+        {
+          "name": "clip",
+          "kind": "connection",
+          "type": "CLIP",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "CONDITIONING"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "CLIPSetLastLayer": {
+      "classType": "CLIPSetLastLayer",
+      "displayName": "CLIP Set Last Layer",
+      "category": "conditioning",
+      "inputs": [
+        {
+          "name": "stop_at_clip_layer",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": -24,
+          "max": -1,
+          "default": -1
+        },
+        {
+          "name": "clip",
+          "kind": "connection",
+          "type": "CLIP",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "CLIP"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "ControlNetLoader": {
+      "classType": "ControlNetLoader",
+      "displayName": "Load ControlNet Model",
+      "category": "loaders",
+      "inputs": [
+        {
+          "name": "control_net_name",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": [
+            "control_v11p_sd15_canny.safetensors",
+            "control_v11f1p_sd15_depth.safetensors"
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "CONTROL_NET"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "ControlNetApplyAdvanced": {
+      "classType": "ControlNetApplyAdvanced",
+      "displayName": "Apply ControlNet (Advanced)",
+      "category": "conditioning/controlnet",
+      "inputs": [
+        {
+          "name": "positive",
+          "kind": "connection",
+          "type": "CONDITIONING",
+          "required": true
+        },
+        {
+          "name": "negative",
+          "kind": "connection",
+          "type": "CONDITIONING",
+          "required": true
+        },
+        {
+          "name": "control_net",
+          "kind": "connection",
+          "type": "CONTROL_NET",
+          "required": true
+        },
+        {
+          "name": "image",
+          "kind": "connection",
+          "type": "IMAGE",
+          "required": true
+        },
+        {
+          "name": "strength",
+          "kind": "float",
+          "type": "FLOAT",
+          "required": true,
+          "min": 0,
+          "max": 10,
+          "step": 0.01,
+          "default": 1
+        },
+        {
+          "name": "start_percent",
+          "kind": "float",
+          "type": "FLOAT",
+          "required": true,
+          "min": 0,
+          "max": 1,
+          "step": 0.001,
+          "default": 0
+        },
+        {
+          "name": "end_percent",
+          "kind": "float",
+          "type": "FLOAT",
+          "required": true,
+          "min": 0,
+          "max": 1,
+          "step": 0.001,
+          "default": 1
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "CONDITIONING",
+          "name": "positive"
+        },
+        {
+          "index": 1,
+          "type": "CONDITIONING",
+          "name": "negative"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "EmptyLatentImage": {
+      "classType": "EmptyLatentImage",
+      "displayName": "Empty Latent Image",
+      "category": "latent",
+      "inputs": [
+        {
+          "name": "width",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 16,
+          "max": 16384,
+          "step": 8,
+          "default": 512
+        },
+        {
+          "name": "height",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 16,
+          "max": 16384,
+          "step": 8,
+          "default": 512
+        },
+        {
+          "name": "batch_size",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 1,
+          "max": 4096,
+          "default": 1
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "LATENT"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "KSampler": {
+      "classType": "KSampler",
+      "displayName": "KSampler",
+      "category": "sampling",
+      "inputs": [
+        {
+          "name": "model",
+          "kind": "connection",
+          "type": "MODEL",
+          "required": true
+        },
+        {
+          "name": "seed",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 18446744073709552000,
+          "controlAfterGenerate": true,
+          "default": 0
+        },
+        {
+          "name": "steps",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 1,
+          "max": 10000,
+          "default": 20
+        },
+        {
+          "name": "cfg",
+          "kind": "float",
+          "type": "FLOAT",
+          "required": true,
+          "min": 0,
+          "max": 100,
+          "step": 0.1,
+          "round": 0.01,
+          "default": 8
+        },
+        {
+          "name": "sampler_name",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": [
+            "euler",
+            "euler_ancestral",
+            "heun",
+            "heunpp2",
+            "dpm_2",
+            "dpm_2_ancestral",
+            "lms",
+            "dpm_fast",
+            "dpm_adaptive",
+            "dpmpp_2s_ancestral",
+            "dpmpp_sde",
+            "dpmpp_2m",
+            "dpmpp_2m_sde",
+            "dpmpp_3m_sde",
+            "ddpm",
+            "lcm",
+            "ddim",
+            "uni_pc",
+            "uni_pc_bh2"
+          ]
+        },
+        {
+          "name": "scheduler",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": [
+            "normal",
+            "karras",
+            "exponential",
+            "sgm_uniform",
+            "simple",
+            "ddim_uniform",
+            "beta",
+            "linear_quadratic",
+            "kl_optimal"
+          ]
+        },
+        {
+          "name": "positive",
+          "kind": "connection",
+          "type": "CONDITIONING",
+          "required": true
+        },
+        {
+          "name": "negative",
+          "kind": "connection",
+          "type": "CONDITIONING",
+          "required": true
+        },
+        {
+          "name": "latent_image",
+          "kind": "connection",
+          "type": "LATENT",
+          "required": true
+        },
+        {
+          "name": "denoise",
+          "kind": "float",
+          "type": "FLOAT",
+          "required": true,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "default": 1
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "LATENT"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "KSamplerAdvanced": {
+      "classType": "KSamplerAdvanced",
+      "displayName": "KSampler (Advanced)",
+      "category": "sampling",
+      "inputs": [
+        {
+          "name": "add_noise",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["enable", "disable"]
+        },
+        {
+          "name": "noise_seed",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 18446744073709552000,
+          "controlAfterGenerate": true,
+          "default": 0
+        },
+        {
+          "name": "steps",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 1,
+          "max": 10000,
+          "default": 20
+        },
+        {
+          "name": "cfg",
+          "kind": "float",
+          "type": "FLOAT",
+          "required": true,
+          "min": 0,
+          "max": 100,
+          "step": 0.1,
+          "round": 0.01,
+          "default": 8
+        },
+        {
+          "name": "sampler_name",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": [
+            "euler",
+            "euler_ancestral",
+            "heun",
+            "heunpp2",
+            "dpm_2",
+            "dpm_2_ancestral",
+            "lms",
+            "dpm_fast",
+            "dpm_adaptive",
+            "dpmpp_2s_ancestral",
+            "dpmpp_sde",
+            "dpmpp_2m",
+            "dpmpp_2m_sde",
+            "dpmpp_3m_sde",
+            "ddpm",
+            "lcm",
+            "ddim",
+            "uni_pc",
+            "uni_pc_bh2"
+          ]
+        },
+        {
+          "name": "scheduler",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": [
+            "normal",
+            "karras",
+            "exponential",
+            "sgm_uniform",
+            "simple",
+            "ddim_uniform",
+            "beta",
+            "linear_quadratic",
+            "kl_optimal"
+          ]
+        },
+        {
+          "name": "start_at_step",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 10000,
+          "default": 0
+        },
+        {
+          "name": "end_at_step",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 10000,
+          "default": 10000
+        },
+        {
+          "name": "return_with_leftover_noise",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["disable", "enable"]
+        },
+        {
+          "name": "model",
+          "kind": "connection",
+          "type": "MODEL",
+          "required": true
+        },
+        {
+          "name": "positive",
+          "kind": "connection",
+          "type": "CONDITIONING",
+          "required": true
+        },
+        {
+          "name": "negative",
+          "kind": "connection",
+          "type": "CONDITIONING",
+          "required": true
+        },
+        {
+          "name": "latent_image",
+          "kind": "connection",
+          "type": "LATENT",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "LATENT"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "VAEDecode": {
+      "classType": "VAEDecode",
+      "displayName": "VAE Decode",
+      "category": "latent",
+      "inputs": [
+        {
+          "name": "samples",
+          "kind": "connection",
+          "type": "LATENT",
+          "required": true
+        },
+        {
+          "name": "vae",
+          "kind": "connection",
+          "type": "VAE",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "IMAGE"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "VAEEncode": {
+      "classType": "VAEEncode",
+      "displayName": "VAE Encode",
+      "category": "latent",
+      "inputs": [
+        {
+          "name": "pixels",
+          "kind": "connection",
+          "type": "IMAGE",
+          "required": true
+        },
+        {
+          "name": "vae",
+          "kind": "connection",
+          "type": "VAE",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "LATENT"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "VAEEncodeForInpaint": {
+      "classType": "VAEEncodeForInpaint",
+      "displayName": "VAE Encode (for Inpainting)",
+      "category": "latent/inpaint",
+      "inputs": [
+        {
+          "name": "pixels",
+          "kind": "connection",
+          "type": "IMAGE",
+          "required": true
+        },
+        {
+          "name": "vae",
+          "kind": "connection",
+          "type": "VAE",
+          "required": true
+        },
+        {
+          "name": "mask",
+          "kind": "connection",
+          "type": "MASK",
+          "required": true
+        },
+        {
+          "name": "grow_mask_by",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 64,
+          "step": 1,
+          "default": 6
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "LATENT"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "LoadImage": {
+      "classType": "LoadImage",
+      "displayName": "Load Image",
+      "category": "image",
+      "inputs": [
+        {
+          "name": "image",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["example.png", "photo.jpg", "mask.png"]
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "IMAGE"
+        },
+        {
+          "index": 1,
+          "type": "MASK"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "LoadImageMask": {
+      "classType": "LoadImageMask",
+      "displayName": "Load Image (as Mask)",
+      "category": "mask",
+      "inputs": [
+        {
+          "name": "mask",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["example.png", "mask.png"]
+        },
+        {
+          "name": "channel",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["alpha", "red", "green", "blue"]
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "MASK"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "SaveImage": {
+      "classType": "SaveImage",
+      "displayName": "Save Image",
+      "category": "image",
+      "inputs": [
+        {
+          "name": "images",
+          "kind": "connection",
+          "type": "IMAGE",
+          "required": true
+        },
+        {
+          "name": "filename_prefix",
+          "kind": "string",
+          "type": "STRING",
+          "required": true,
+          "default": "ComfyUI"
+        }
+      ],
+      "outputs": [],
+      "outputNode": true,
+      "pythonModule": "nodes.py"
+    },
+    "PreviewImage": {
+      "classType": "PreviewImage",
+      "displayName": "Preview Image",
+      "category": "image",
+      "inputs": [
+        {
+          "name": "images",
+          "kind": "connection",
+          "type": "IMAGE",
+          "required": true
+        }
+      ],
+      "outputs": [],
+      "outputNode": true,
+      "pythonModule": "nodes.py"
+    },
+    "ImageScale": {
+      "classType": "ImageScale",
+      "displayName": "Upscale Image",
+      "category": "image/upscaling",
+      "inputs": [
+        {
+          "name": "upscale_method",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"]
+        },
+        {
+          "name": "width",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 18446744073709552000,
+          "step": 1,
+          "default": 512
+        },
+        {
+          "name": "height",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 18446744073709552000,
+          "step": 1,
+          "default": 512
+        },
+        {
+          "name": "crop",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["disabled", "center"]
+        },
+        {
+          "name": "image",
+          "kind": "connection",
+          "type": "IMAGE",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "IMAGE"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "UpscaleModelLoader": {
+      "classType": "UpscaleModelLoader",
+      "displayName": "Load Upscale Model",
+      "category": "loaders",
+      "inputs": [
+        {
+          "name": "model_name",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["4x-ultrasharp.pth", "RealESRGAN_x4plus.pth"]
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "UPSCALE_MODEL"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "ImageUpscaleWithModel": {
+      "classType": "ImageUpscaleWithModel",
+      "displayName": "Upscale Image (using Model)",
+      "category": "image/upscaling",
+      "inputs": [
+        {
+          "name": "upscale_model",
+          "kind": "connection",
+          "type": "UPSCALE_MODEL",
+          "required": true
+        },
+        {
+          "name": "image",
+          "kind": "connection",
+          "type": "IMAGE",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "IMAGE"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "LatentUpscale": {
+      "classType": "LatentUpscale",
+      "displayName": "Upscale Latent",
+      "category": "latent",
+      "inputs": [
+        {
+          "name": "upscale_method",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["nearest-exact", "bilinear", "area", "bicubic", "bislerp"]
+        },
+        {
+          "name": "width",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 64,
+          "max": 16384,
+          "step": 8,
+          "default": 512
+        },
+        {
+          "name": "height",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 64,
+          "max": 16384,
+          "step": 8,
+          "default": 512
+        },
+        {
+          "name": "crop",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["disabled", "center"]
+        },
+        {
+          "name": "samples",
+          "kind": "connection",
+          "type": "LATENT",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "LATENT"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "LatentUpscaleBy": {
+      "classType": "LatentUpscaleBy",
+      "displayName": "Upscale Latent By",
+      "category": "latent",
+      "inputs": [
+        {
+          "name": "upscale_method",
+          "kind": "combo",
+          "type": "COMBO",
+          "required": true,
+          "options": ["nearest-exact", "bilinear", "area", "bicubic", "bislerp"]
+        },
+        {
+          "name": "scale_by",
+          "kind": "float",
+          "type": "FLOAT",
+          "required": true,
+          "min": 0.01,
+          "max": 8,
+          "step": 0.01,
+          "default": 1.5
+        },
+        {
+          "name": "samples",
+          "kind": "connection",
+          "type": "LATENT",
+          "required": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "LATENT"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "nodes.py"
+    },
+    "PadImageForOutpainting": {
+      "classType": "PadImageForOutpainting",
+      "displayName": "Pad Image for Outpainting",
+      "category": "image/inpaint",
+      "inputs": [
+        {
+          "name": "image",
+          "kind": "connection",
+          "type": "IMAGE",
+          "required": true
+        },
+        {
+          "name": "left",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 18446744073709552000,
+          "step": 8,
+          "default": 0
+        },
+        {
+          "name": "top",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 18446744073709552000,
+          "step": 8,
+          "default": 0
+        },
+        {
+          "name": "right",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 18446744073709552000,
+          "step": 8,
+          "default": 0
+        },
+        {
+          "name": "bottom",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 18446744073709552000,
+          "step": 8,
+          "default": 0
+        },
+        {
+          "name": "feathering",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": 0,
+          "max": 18446744073709552000,
+          "step": 8,
+          "default": 20
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "IMAGE"
+        },
+        {
+          "index": 1,
+          "type": "MASK"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "comfy_extras/nodes_post_processing.py"
+    },
+    "GrowMask": {
+      "classType": "GrowMask",
+      "displayName": "Grow Mask",
+      "category": "mask",
+      "inputs": [
+        {
+          "name": "mask",
+          "kind": "connection",
+          "type": "MASK",
+          "required": true
+        },
+        {
+          "name": "expand",
+          "kind": "int",
+          "type": "INT",
+          "required": true,
+          "min": -18446744073709552000,
+          "max": 18446744073709552000,
+          "step": 1,
+          "default": 0
+        },
+        {
+          "name": "tapered_corners",
+          "kind": "boolean",
+          "type": "BOOLEAN",
+          "required": true,
+          "default": true
+        }
+      ],
+      "outputs": [
+        {
+          "index": 0,
+          "type": "MASK"
+        }
+      ],
+      "outputNode": false,
+      "pythonModule": "comfy_extras/nodes_mask.py"
+    },
+    "Note": {
+      "classType": "Note",
+      "displayName": "Note",
+      "category": "utils",
+      "inputs": [
+        {
+          "name": "text",
+          "kind": "string",
+          "type": "STRING",
+          "required": true,
+          "multiline": true,
+          "default": ""
+        }
+      ],
+      "outputs": [],
+      "outputNode": false,
+      "pythonModule": "comfy_extras/nodes_note.py"
+    }
+  }
+}

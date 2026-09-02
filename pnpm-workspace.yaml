@@ -1,0 +1,5 @@
+# pnpm workspace + settings file (pnpm >= 10 reads config from here).
+allowBuilds:
+  esbuild: true
+onlyBuiltDependencies:
+  - esbuild

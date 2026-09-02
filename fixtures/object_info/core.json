@@ -1,0 +1,500 @@
+{
+  "CheckpointLoaderSimple": {
+    "input": {
+      "required": {
+        "ckpt_name": [
+          ["v1-5-pruned-emaonly.safetensors", "sd_xl_base_1.0.safetensors", "flux1-dev.safetensors"]
+        ]
+      }
+    },
+    "input_order": { "required": ["ckpt_name"] },
+    "output": ["MODEL", "CLIP", "VAE"],
+    "output_name": ["MODEL", "CLIP", "VAE"],
+    "name": "Load Checkpoint",
+    "category": "loaders",
+    "output_node": false,
+    "python_module": "nodes.py",
+    "description": "Loads a diffusion model checkpoint (diffusers or original format)."
+  },
+  "LoraLoader": {
+    "input": {
+      "required": {
+        "model": [["MODEL"]],
+        "clip": [["CLIP"]],
+        "lora_name": [["lora1.safetensors", "lora2.safetensors", "detail_tweaker.safetensors"]],
+        "strength_model": ["FLOAT", { "default": 1.0, "min": -20.0, "max": 20.0, "step": 0.01 }],
+        "strength_clip": ["FLOAT", { "default": 1.0, "min": -20.0, "max": 20.0, "step": 0.01 }]
+      }
+    },
+    "input_order": {
+      "required": ["model", "clip", "lora_name", "strength_model", "strength_clip"]
+    },
+    "output": ["MODEL", "CLIP"],
+    "output_name": ["MODEL", "CLIP"],
+    "name": "Load LoRA",
+    "category": "loaders",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "CLIPTextEncode": {
+    "input": {
+      "required": {
+        "text": ["STRING", { "multiline": true, "dynamicPrompts": true, "default": "" }],
+        "clip": [["CLIP"]]
+      }
+    },
+    "input_order": { "required": ["text", "clip"] },
+    "output": ["CONDITIONING"],
+    "output_name": ["CONDITIONING"],
+    "name": "CLIP Text Encode (Prompt)",
+    "category": "conditioning",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "CLIPSetLastLayer": {
+    "input": {
+      "required": {
+        "stop_at_clip_layer": ["INT", { "default": -1, "min": -24, "max": -1 }],
+        "clip": [["CLIP"]]
+      }
+    },
+    "input_order": { "required": ["stop_at_clip_layer", "clip"] },
+    "output": ["CLIP"],
+    "output_name": ["CLIP"],
+    "name": "CLIP Set Last Layer",
+    "category": "conditioning",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "ControlNetLoader": {
+    "input": {
+      "required": {
+        "control_net_name": [
+          ["control_v11p_sd15_canny.safetensors", "control_v11f1p_sd15_depth.safetensors"]
+        ]
+      }
+    },
+    "input_order": { "required": ["control_net_name"] },
+    "output": ["CONTROL_NET"],
+    "output_name": ["CONTROL_NET"],
+    "name": "Load ControlNet Model",
+    "category": "loaders",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "ControlNetApplyAdvanced": {
+    "input": {
+      "required": {
+        "positive": [["CONDITIONING"]],
+        "negative": [["CONDITIONING"]],
+        "control_net": [["CONTROL_NET"]],
+        "image": [["IMAGE"]],
+        "strength": ["FLOAT", { "default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01 }],
+        "start_percent": ["FLOAT", { "default": 0.0, "min": 0.0, "max": 1.0, "step": 0.001 }],
+        "end_percent": ["FLOAT", { "default": 1.0, "min": 0.0, "max": 1.0, "step": 0.001 }]
+      }
+    },
+    "input_order": {
+      "required": [
+        "positive",
+        "negative",
+        "control_net",
+        "image",
+        "strength",
+        "start_percent",
+        "end_percent"
+      ]
+    },
+    "output": ["CONDITIONING", "CONDITIONING"],
+    "output_name": ["positive", "negative"],
+    "name": "Apply ControlNet (Advanced)",
+    "category": "conditioning/controlnet",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "EmptyLatentImage": {
+    "input": {
+      "required": {
+        "width": ["INT", { "default": 512, "min": 16, "max": 16384, "step": 8 }],
+        "height": ["INT", { "default": 512, "min": 16, "max": 16384, "step": 8 }],
+        "batch_size": ["INT", { "default": 1, "min": 1, "max": 4096 }]
+      }
+    },
+    "input_order": { "required": ["width", "height", "batch_size"] },
+    "output": ["LATENT"],
+    "output_name": ["LATENT"],
+    "name": "Empty Latent Image",
+    "category": "latent",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "KSampler": {
+    "input": {
+      "required": {
+        "model": [["MODEL"]],
+        "seed": [
+          "INT",
+          { "default": 0, "min": 0, "max": 18446744073709551617, "control_after_generate": true }
+        ],
+        "steps": ["INT", { "default": 20, "min": 1, "max": 10000 }],
+        "cfg": ["FLOAT", { "default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01 }],
+        "sampler_name": [
+          [
+            "euler",
+            "euler_ancestral",
+            "heun",
+            "heunpp2",
+            "dpm_2",
+            "dpm_2_ancestral",
+            "lms",
+            "dpm_fast",
+            "dpm_adaptive",
+            "dpmpp_2s_ancestral",
+            "dpmpp_sde",
+            "dpmpp_2m",
+            "dpmpp_2m_sde",
+            "dpmpp_3m_sde",
+            "ddpm",
+            "lcm",
+            "ddim",
+            "uni_pc",
+            "uni_pc_bh2"
+          ]
+        ],
+        "scheduler": [
+          [
+            "normal",
+            "karras",
+            "exponential",
+            "sgm_uniform",
+            "simple",
+            "ddim_uniform",
+            "beta",
+            "linear_quadratic",
+            "kl_optimal"
+          ]
+        ],
+        "positive": [["CONDITIONING"]],
+        "negative": [["CONDITIONING"]],
+        "latent_image": [["LATENT"]],
+        "denoise": ["FLOAT", { "default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01 }]
+      }
+    },
+    "input_order": {
+      "required": [
+        "model",
+        "seed",
+        "steps",
+        "cfg",
+        "sampler_name",
+        "scheduler",
+        "positive",
+        "negative",
+        "latent_image",
+        "denoise"
+      ]
+    },
+    "output": ["LATENT"],
+    "output_name": ["LATENT"],
+    "name": "KSampler",
+    "category": "sampling",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "KSamplerAdvanced": {
+    "input": {
+      "required": {
+        "add_noise": [["enable", "disable"]],
+        "noise_seed": [
+          "INT",
+          { "default": 0, "min": 0, "max": 18446744073709551617, "control_after_generate": true }
+        ],
+        "steps": ["INT", { "default": 20, "min": 1, "max": 10000 }],
+        "cfg": ["FLOAT", { "default": 8.0, "min": 0.0, "max": 100.0, "step": 0.1, "round": 0.01 }],
+        "sampler_name": [
+          [
+            "euler",
+            "euler_ancestral",
+            "heun",
+            "heunpp2",
+            "dpm_2",
+            "dpm_2_ancestral",
+            "lms",
+            "dpm_fast",
+            "dpm_adaptive",
+            "dpmpp_2s_ancestral",
+            "dpmpp_sde",
+            "dpmpp_2m",
+            "dpmpp_2m_sde",
+            "dpmpp_3m_sde",
+            "ddpm",
+            "lcm",
+            "ddim",
+            "uni_pc",
+            "uni_pc_bh2"
+          ]
+        ],
+        "scheduler": [
+          [
+            "normal",
+            "karras",
+            "exponential",
+            "sgm_uniform",
+            "simple",
+            "ddim_uniform",
+            "beta",
+            "linear_quadratic",
+            "kl_optimal"
+          ]
+        ],
+        "start_at_step": ["INT", { "default": 0, "min": 0, "max": 10000 }],
+        "end_at_step": ["INT", { "default": 10000, "min": 0, "max": 10000 }],
+        "return_with_leftover_noise": [["disable", "enable"]],
+        "model": [["MODEL"]],
+        "positive": [["CONDITIONING"]],
+        "negative": [["CONDITIONING"]],
+        "latent_image": [["LATENT"]]
+      }
+    },
+    "input_order": {
+      "required": [
+        "add_noise",
+        "noise_seed",
+        "steps",
+        "cfg",
+        "sampler_name",
+        "scheduler",
+        "start_at_step",
+        "end_at_step",
+        "return_with_leftover_noise",
+        "model",
+        "positive",
+        "negative",
+        "latent_image"
+      ]
+    },
+    "output": ["LATENT"],
+    "output_name": ["LATENT"],
+    "name": "KSampler (Advanced)",
+    "category": "sampling",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "VAEDecode": {
+    "input": { "required": { "samples": [["LATENT"]], "vae": [["VAE"]] } },
+    "input_order": { "required": ["samples", "vae"] },
+    "output": ["IMAGE"],
+    "output_name": ["IMAGE"],
+    "name": "VAE Decode",
+    "category": "latent",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "VAEEncode": {
+    "input": { "required": { "pixels": [["IMAGE"]], "vae": [["VAE"]] } },
+    "input_order": { "required": ["pixels", "vae"] },
+    "output": ["LATENT"],
+    "output_name": ["LATENT"],
+    "name": "VAE Encode",
+    "category": "latent",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "VAEEncodeForInpaint": {
+    "input": {
+      "required": {
+        "pixels": [["IMAGE"]],
+        "vae": [["VAE"]],
+        "mask": [["MASK"]],
+        "grow_mask_by": ["INT", { "default": 6, "min": 0, "max": 64, "step": 1 }]
+      }
+    },
+    "input_order": { "required": ["pixels", "vae", "mask", "grow_mask_by"] },
+    "output": ["LATENT"],
+    "output_name": ["LATENT"],
+    "name": "VAE Encode (for Inpainting)",
+    "category": "latent/inpaint",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "LoadImage": {
+    "input": {
+      "required": {
+        "image": [["example.png", "photo.jpg", "mask.png"]],
+        "upload": ["IMAGE_UPLOAD", true]
+      }
+    },
+    "input_order": { "required": ["image", "upload"] },
+    "output": ["IMAGE", "MASK"],
+    "output_name": ["IMAGE", "MASK"],
+    "name": "Load Image",
+    "category": "image",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "LoadImageMask": {
+    "input": {
+      "required": {
+        "mask": [["example.png", "mask.png"]],
+        "channel": [["alpha", "red", "green", "blue"]],
+        "upload": ["IMAGE_UPLOAD", true]
+      }
+    },
+    "input_order": { "required": ["mask", "channel", "upload"] },
+    "output": ["MASK"],
+    "output_name": ["MASK"],
+    "name": "Load Image (as Mask)",
+    "category": "mask",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "SaveImage": {
+    "input": {
+      "required": {
+        "images": [["IMAGE"]],
+        "filename_prefix": ["STRING", { "default": "ComfyUI" }]
+      }
+    },
+    "input_order": { "required": ["images", "filename_prefix"] },
+    "output": [],
+    "output_name": [],
+    "name": "Save Image",
+    "category": "image",
+    "output_node": true,
+    "python_module": "nodes.py"
+  },
+  "PreviewImage": {
+    "input": { "required": { "images": [["IMAGE"]] } },
+    "input_order": { "required": ["images"] },
+    "output": [],
+    "output_name": [],
+    "name": "Preview Image",
+    "category": "image",
+    "output_node": true,
+    "python_module": "nodes.py"
+  },
+  "ImageScale": {
+    "input": {
+      "required": {
+        "upscale_method": [["nearest-exact", "bilinear", "area", "bicubic", "lanczos"]],
+        "width": ["INT", { "default": 512, "min": 0, "max": 18446744073709551617, "step": 1 }],
+        "height": ["INT", { "default": 512, "min": 0, "max": 18446744073709551617, "step": 1 }],
+        "crop": [["disabled", "center"]],
+        "image": [["IMAGE"]]
+      }
+    },
+    "input_order": { "required": ["upscale_method", "width", "height", "crop", "image"] },
+    "output": ["IMAGE"],
+    "output_name": ["IMAGE"],
+    "name": "Upscale Image",
+    "category": "image/upscaling",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "UpscaleModelLoader": {
+    "input": { "required": { "model_name": [["4x-ultrasharp.pth", "RealESRGAN_x4plus.pth"]] } },
+    "input_order": { "required": ["model_name"] },
+    "output": ["UPSCALE_MODEL"],
+    "output_name": ["UPSCALE_MODEL"],
+    "name": "Load Upscale Model",
+    "category": "loaders",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "ImageUpscaleWithModel": {
+    "input": { "required": { "upscale_model": [["UPSCALE_MODEL"]], "image": [["IMAGE"]] } },
+    "input_order": { "required": ["upscale_model", "image"] },
+    "output": ["IMAGE"],
+    "output_name": ["IMAGE"],
+    "name": "Upscale Image (using Model)",
+    "category": "image/upscaling",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "LatentUpscale": {
+    "input": {
+      "required": {
+        "upscale_method": [["nearest-exact", "bilinear", "area", "bicubic", "bislerp"]],
+        "width": ["INT", { "default": 512, "min": 64, "max": 16384, "step": 8 }],
+        "height": ["INT", { "default": 512, "min": 64, "max": 16384, "step": 8 }],
+        "crop": [["disabled", "center"]],
+        "samples": [["LATENT"]]
+      }
+    },
+    "input_order": { "required": ["upscale_method", "width", "height", "crop", "samples"] },
+    "output": ["LATENT"],
+    "output_name": ["LATENT"],
+    "name": "Upscale Latent",
+    "category": "latent",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "LatentUpscaleBy": {
+    "input": {
+      "required": {
+        "upscale_method": [["nearest-exact", "bilinear", "area", "bicubic", "bislerp"]],
+        "scale_by": ["FLOAT", { "default": 1.5, "min": 0.01, "max": 8.0, "step": 0.01 }],
+        "samples": [["LATENT"]]
+      }
+    },
+    "input_order": { "required": ["upscale_method", "scale_by", "samples"] },
+    "output": ["LATENT"],
+    "output_name": ["LATENT"],
+    "name": "Upscale Latent By",
+    "category": "latent",
+    "output_node": false,
+    "python_module": "nodes.py"
+  },
+  "PadImageForOutpainting": {
+    "input": {
+      "required": {
+        "image": [["IMAGE"]],
+        "left": ["INT", { "default": 0, "min": 0, "max": 18446744073709551617, "step": 8 }],
+        "top": ["INT", { "default": 0, "min": 0, "max": 18446744073709551617, "step": 8 }],
+        "right": ["INT", { "default": 0, "min": 0, "max": 18446744073709551617, "step": 8 }],
+        "bottom": ["INT", { "default": 0, "min": 0, "max": 18446744073709551617, "step": 8 }],
+        "feathering": ["INT", { "default": 20, "min": 0, "max": 18446744073709551617, "step": 8 }]
+      }
+    },
+    "input_order": { "required": ["image", "left", "top", "right", "bottom", "feathering"] },
+    "output": ["IMAGE", "MASK"],
+    "output_name": ["IMAGE", "MASK"],
+    "name": "Pad Image for Outpainting",
+    "category": "image/inpaint",
+    "output_node": false,
+    "python_module": "comfy_extras/nodes_post_processing.py"
+  },
+  "GrowMask": {
+    "input": {
+      "required": {
+        "mask": [["MASK"]],
+        "expand": [
+          "INT",
+          { "default": 0, "min": -18446744073709551617, "max": 18446744073709551617, "step": 1 }
+        ],
+        "tapered_corners": ["BOOLEAN", { "default": true }]
+      }
+    },
+    "input_order": { "required": ["mask", "expand", "tapered_corners"] },
+    "output": ["MASK"],
+    "output_name": ["MASK"],
+    "name": "Grow Mask",
+    "category": "mask",
+    "output_node": false,
+    "python_module": "comfy_extras/nodes_mask.py"
+  },
+  "Note": {
+    "input": {
+      "required": {
+        "text": ["STRING", { "multiline": true, "dynamicPrompts": false, "default": "" }]
+      }
+    },
+    "input_order": { "required": ["text"] },
+    "output": [],
+    "output_name": [],
+    "name": "Note",
+    "category": "utils",
+    "output_node": false,
+    "python_module": "comfy_extras/nodes_note.py"
+  }
+}

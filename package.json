@@ -1,0 +1,58 @@
+{
+  "name": "comfy-sdk",
+  "version": "0.1.0",
+  "description": "Code-first ComfyUI workflow system: Graph IR is the canonical workflow representation; ComfyUI is the execution backend.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.17.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./nodes": {
+      "types": "./dist/nodes/index.d.ts",
+      "default": "./dist/nodes/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "default": "./dist/runtime/index.js"
+    },
+    "./ir": {
+      "types": "./dist/ir/index.d.ts",
+      "default": "./dist/ir/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "comfy": "./dist/cli/bin.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "codegen:core": "jiti scripts/run-codegen.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "jiti": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "expect-type": "^1.2.1",
+    "prettier": "^3.6.2",
+    "tsdown": "^0.15.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
