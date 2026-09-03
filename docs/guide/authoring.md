@@ -8,8 +8,8 @@ builder API, the type model, escape hatches, and templates with parameters.
 `workflow(name)` returns a builder; `g.add(spec, params)` adds a typed node:
 
 ```ts
-import { workflow, type Graph } from "comfy-sdk";
-import { loaders, conditioning, latent, sampling } from "comfy-sdk/nodes";
+import { workflow, type Graph } from "@stepupgaming/comfy-workflows";
+import { loaders, conditioning, latent, sampling } from "@stepupgaming/comfy-workflows/nodes";
 
 export function build(): Graph {
   const g = workflow("mine");
@@ -61,7 +61,7 @@ High-level operations expand into many nodes and compose over existing graphs
 (they preserve template params, so composition stays lazy):
 
 ```ts
-import { textToImage, hiresFix, withLora } from "comfy-sdk";
+import { textToImage, hiresFix, withLora } from "@stepupgaming/comfy-workflows";
 
 const tpl = textToImage({ checkpoint: "v1-5-pruned-emaonly.safetensors",
   positivePrompt: "a lighthouse at dusk", seed: 42n });
@@ -80,7 +80,7 @@ any param slot. Graphs carrying placeholders are *templates*; bind them at
 run time with `instantiateTemplate`:
 
 ```ts
-import { workflow, instantiateTemplate } from "comfy-sdk";
+import { workflow, instantiateTemplate } from "@stepupgaming/comfy-workflows";
 
 const g = workflow("t2i-template");
 const prompt = g.param("prompt", { type: "string" });

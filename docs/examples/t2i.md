@@ -5,8 +5,8 @@ authoring form, node by node: checkpoint → LoRA → prompt encodes → empty
 latent → KSampler → VAE decode → SaveImage.
 
 ```ts
-import { workflow, type Graph } from "comfy-sdk";
-import { loaders, conditioning, latent, sampling, image } from "comfy-sdk/nodes";
+import { workflow, type Graph } from "@stepupgaming/comfy-workflows";
+import { loaders, conditioning, latent, sampling, image } from "@stepupgaming/comfy-workflows/nodes";
 
 export function build(): Graph {
   const g = workflow("t2i-example");
@@ -61,7 +61,7 @@ Points of interest:
 Run it without touching the Comfy UI:
 
 ```bash
-comfy run examples/t2i/workflow.ts --url http://127.0.0.1:8188 --out out/
+cwf run examples/t2i/workflow.ts --url http://127.0.0.1:8188 --out out/
 ```
 
 Artifacts land in `out/<runId>/` beside `run.json`, which carries the exact

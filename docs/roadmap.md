@@ -2,10 +2,7 @@
 
 ## Status
 
-The full pipeline is implemented and tested: import → IR → compile → runtime.
-Recipes cover the core text/image domains. Generated typed wrappers are
-committed and stamped with the `objectInfoHash` they were built from; CI
-fails on codegen drift.
+The full pipeline is implemented and tested: import → IR → compile → runtime, plus the npm workflow-package layer (spec, CLI, two first-party packages). Generated typed wrappers are committed and stamped with the `objectInfoHash` they were built from; CI fails on codegen or package-artifact drift.
 
 Highlights of what ships today:
 
@@ -16,13 +13,16 @@ Highlights of what ships today:
 - Runtime over HTTP+WS with asset staging, artifact download, and replayable
   `run.json` metadata.
 - Environment locking via `comfy.lock.json` with drift warnings.
+- Workflow packages: versioned `comfy.workflow.json` manifests, `cwf pack` /
+  `cwf inspect` / `cwf run <package>`, and the `text-to-image` + `hires`
+  first-party packages.
 
-See [ARCHITECTURE](/reference/architecture) for why each piece looks the way
+See [Architecture](/reference/architecture) for why each piece looks the way
 it does.
 
 ## Follow-ups
 
-These are tracked but **not** part of the frozen v0.1 scope:
+These are tracked but **not** in the current scope:
 
 - Editor-format export (IR back to UI JSON)
 - Full asset management (sync, dedup, cleanup — the staging seam exists)
@@ -30,5 +30,5 @@ These are tracked but **not** part of the frozen v0.1 scope:
 - MCP server
 
 The architecture leaves room for each without breaking the existing layer
-contract: recipes stay above the typed SDK, IR stays the semantic truth, and
-Comfy JSON stays a build artifact.
+contract: packages and recipes stay above the typed SDK, IR stays the semantic
+truth, and Comfy JSON stays a build artifact.

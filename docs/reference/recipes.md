@@ -3,7 +3,7 @@
 Recipes are high-level operations that expand into full node graphs. They
 return template graphs — `ParamRef` placeholders survive every composition, so
 `hiresFix(withLora(tpl, …))` stays lazy until `instantiateTemplate`. All live
-in the root `comfy-sdk` entry point.
+in the root `@stepupgaming/comfy-workflows` entry point.
 
 ## textToImage
 

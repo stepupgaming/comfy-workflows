@@ -35,7 +35,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Build docs site
-        run: pnpm --filter comfy-sdk-docs docs:build
+        run: pnpm --filter comfy-workflows-docs docs:build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

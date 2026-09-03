@@ -131,6 +131,11 @@ export async function cli(argv: string[]): Promise<number> {
         return await cmdCatalog(positional, flags);
       case "explain":
         return await cmdExplain(positional, flags);
+      case "help":
+      case "--help":
+      case "-h":
+        printHelp();
+        return 0;
       default:
         printHelp();
         return command === undefined ? 0 : 1;

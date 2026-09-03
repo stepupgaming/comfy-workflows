@@ -61,8 +61,8 @@ stderr — visible, structured, never silent — while compilation continues.
 ## CLI
 
 ```bash
-comfy compile workflows/foo/workflow.ts -o dist/foo.api.json --pretty
-comfy validate workflows/foo/workflow.ts --url http://127.0.0.1:8188
+cwf compile workflows/foo/workflow.ts -o dist/foo.api.json --pretty
+cwf validate workflows/foo/workflow.ts --url http://127.0.0.1:8188
 ```
 
 Both accept `workflow.ts`, `.ir.json`, and Comfy workflow JSON directly (the

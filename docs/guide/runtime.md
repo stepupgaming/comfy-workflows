@@ -1,15 +1,15 @@
 # Runtime & execution
 
-`comfy-sdk/runtime` executes graphs on any reachable ComfyUI — local or
+`@stepupgaming/comfy-workflows/runtime` executes graphs on any reachable ComfyUI — local or
 remote. ComfyUI is an execution backend only; everything the runtime submits
 was compiled by the SDK.
 
 ## createClient
 
 ```ts
-import { createClient } from "comfy-sdk/runtime";
+import { createClient } from "@stepupgaming/comfy-workflows/runtime";
 
-const comfy = createClient({
+const client = createClient({
   url: "http://127.0.0.1:8188",
   headers: { Authorization: "Bearer …" }, // optional, applied to every request
   timeoutMs: 600_000, // default
@@ -24,10 +24,10 @@ injectable for tests.
 `run` accepts four input shapes — work at the highest one that fits:
 
 ```ts
-await comfy.run({ kind: "template", graph: tpl, params: { seed: 42n } });
-await comfy.run({ kind: "graph", graph }); // template with placeholders already bound
-await comfy.run({ kind: "compiled", object: compiled }); // pre-compiled API object
-await comfy.run({ kind: "wire", json: compiledJsonString }); // exact bytes (replay)
+await client.run({ kind: "template", graph: tpl, params: { seed: 42n } });
+await client.run({ kind: "graph", graph }); // template with placeholders already bound
+await client.run({ kind: "compiled", object: compiled }); // pre-compiled API object
+await client.run({ kind: "wire", json: compiledJsonString }); // exact bytes (replay)
 ```
 
 Every shape converges on the same submission path: the POST body is assembled
@@ -38,7 +38,7 @@ the test suite.
 ## run, runAll, validate
 
 ```ts
-const result = await comfy.run({ kind: "graph", graph }, { outDir: "out" });
+const result = await client.run({ kind: "graph", graph }, { outDir: "out" });
 result.artifacts; // [{ filename, subfolder, type, contentType, savedPath, bytes }]
 result.graphHash; // hash of the submitted graph
 ```
@@ -59,7 +59,7 @@ files. Before submit, the runtime uploads them (`/upload/image`,
 `/upload/mask`) and rewrites the refs to server filenames:
 
 ```ts
-import { AssetRef } from "comfy-sdk";
+import { AssetRef } from "@stepupgaming/comfy-workflows";
 
 const graph = img2img({
   checkpoint: "v1-5-pruned-emaonly.safetensors",
