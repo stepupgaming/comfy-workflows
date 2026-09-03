@@ -1,0 +1,70 @@
+{
+  "specVersion": 1,
+  "name": "text-to-image",
+  "title": "Text to Image",
+  "entry": "./workflow.ir.json",
+  "description": "Baseline text-to-image: checkpoint → prompt encodes → KSampler → VAE decode → save.",
+  "parameters": {
+    "checkpoint": {
+      "type": "string",
+      "required": true,
+      "description": "Checkpoint file present on the ComfyUI server."
+    },
+    "seed": {
+      "type": "int",
+      "required": true,
+      "description": "Sampling seed."
+    },
+    "prompt": {
+      "type": "string",
+      "required": true,
+      "description": "Positive prompt."
+    },
+    "negative": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Negative prompt."
+    },
+    "width": {
+      "type": "int",
+      "required": false,
+      "default": 512,
+      "description": "Image width."
+    },
+    "height": {
+      "type": "int",
+      "required": false,
+      "default": 512,
+      "description": "Image height."
+    }
+  },
+  "outputs": [
+    {
+      "name": "image",
+      "type": "IMAGE"
+    }
+  ],
+  "requires": {
+    "nodeClasses": [
+      "CLIPTextEncode",
+      "CheckpointLoaderSimple",
+      "EmptyLatentImage",
+      "KSampler",
+      "SaveImage",
+      "VAEDecode"
+    ],
+    "nodePacks": [],
+    "models": [
+      {
+        "kind": "checkpoint",
+        "name": "checkpoint (see parameters)",
+        "optional": false
+      }
+    ]
+  },
+  "coreVersion": "^0.1.0",
+  "compatibility": {
+    "notes": "Needs any SD1.x/SDXL-compatible checkpoint on the server, passed as the checkpoint parameter."
+  }
+}

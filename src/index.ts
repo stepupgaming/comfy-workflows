@@ -1,5 +1,5 @@
 /**
- * comfy-sdk — code-first ComfyUI workflow system.
+ * comfy-workflows — code-first, typed, composable workflows for ComfyUI.
  *
  * Graph IR is the canonical semantic representation; TypeScript workflow files
  * are the canonical authoring representation; Comfy API JSON is a build
@@ -28,6 +28,9 @@ export * from "./compile/index.js";
 // Node definitions
 export * from "./defs/index.js";
 
+// Runtime (client, assets, run orchestration)
+export * from "./runtime/index.js";
+
 // Errors
 export {
   ComfyError,
@@ -36,3 +39,9 @@ export {
   type ComfyErrorFields,
   type ErrorCode,
 } from "./errors.js";
+
+// Workflow packages (manifest, discovery, coherence checks)
+export * from "./wfpack/index.js";
+
+// Recipes (composable workflow builders + transforms)
+export * as recipes from "./recipes/index.js";

@@ -14,12 +14,12 @@ import { loaders, conditioning, latent, sampling, image } from "../nodes/gen/reg
  */
 
 export interface TextToImageOptions {
-  checkpoint: string;
+  checkpoint: string | ParamRef;
   positivePrompt: string | ParamRef;
   negativePrompt?: string | ParamRef;
-  width?: number;
-  height?: number;
-  batch?: number;
+  width?: number | ParamRef;
+  height?: number | ParamRef;
+  batch?: number | ParamRef;
   steps?: number;
   cfg?: number;
   sampler?: string;
@@ -35,12 +35,27 @@ export interface TextToImageOptions {
 export function textToImage(opts: TextToImageOptions): Graph {
   const g = new GraphBuilder("textToImage");
   // ParamRef options must be declared so instantiate() knows their defaults/types.
+  if (typeof opts.checkpoint === "object" && "$param" in opts.checkpoint)
+    g.param(opts.checkpoint.$param, { type: "combo" });
   if (typeof opts.seed === "object" && "$param" in opts.seed)
     g.param(opts.seed.$param, { type: "int" });
   if (typeof opts.positivePrompt === "object")
     g.param(opts.positivePrompt.$param, { type: "string" });
   if (opts.negativePrompt !== undefined && typeof opts.negativePrompt === "object") {
     g.param(opts.negativePrompt.$param, { type: "string", default: "" });
+  }
+  for (const [opt, type] of [
+    [opts.width, "int"],
+    [opts.height, "int"],
+    [opts.batch, "int"],
+  ] as const) {
+    if (typeof opt === "object" && "$param" in opt) {
+      try {
+        g.param(opt.$param, { type });
+      } catch {
+        /* already declared by the caller — keep the caller's metadata */
+      }
+    }
   }
   const ckpt = g.add(loaders.CheckpointLoaderSimple, { ckpt_name: opts.checkpoint });
   const clip =
@@ -72,8 +87,9 @@ export function textToImage(opts: TextToImageOptions): Graph {
   const decoded = g.add(latent.VAEDecode, { samples: sampled.LATENT, vae: ckpt.VAE });
   g.add(image.SaveImage, {
     images: decoded.IMAGE,
-    filename_prefix: opts.filenamePrefix ?? "comfy-sdk",
+    filename_prefix: opts.filenamePrefix ?? "cwf-t2i",
   });
+  g.output(decoded.IMAGE, { name: "image" });
   const graph = g.toGraph();
   if (opts.loras?.length) applyLoras(graph, opts.loras);
   return graph;

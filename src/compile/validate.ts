@@ -50,7 +50,7 @@ export function validateGraph(g: Graph, defs?: NodeDefs): ValidationResult {
         code: ErrorCodes.UnknownNodeType,
         message: `Node "${id}" uses unknown type "${node.type}"`,
         nodeId: id,
-        hint: "Regenerate wrappers with `comfy codegen` against the target instance, or mark the node raw.",
+        hint: "Regenerate wrappers with `cwf codegen` against the target instance, or mark the node raw.",
       });
       continue;
     }

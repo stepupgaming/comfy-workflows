@@ -36,15 +36,15 @@ function liveStyleObjectInfo(): Record<string, unknown> {
   };
 }
 
-/** jiti wired with the same "comfy-sdk" aliases the CLI compile path uses. */
+/** jiti wired with the same aliases the CLI compile path uses. */
 function makeJiti() {
   return createJiti(import.meta.url, {
     alias: {
-      "comfy-sdk/nodes": new URL("../src/nodes/index.ts", import.meta.url).pathname.replace(
-        /^\/([A-Z]:)/,
-        "$1",
-      ),
-      "comfy-sdk": new URL("../src/index.ts", import.meta.url).pathname.replace(
+      "@stepupgaming/comfy-workflows/nodes": new URL(
+        "../src/nodes/index.ts",
+        import.meta.url,
+      ).pathname.replace(/^\/([A-Z]:)/, "$1"),
+      "@stepupgaming/comfy-workflows": new URL("../src/index.ts", import.meta.url).pathname.replace(
         /^\/([A-Z]:)/,
         "$1",
       ),
@@ -80,7 +80,7 @@ describe("TS-emitter correctness regressions (pre-freeze)", () => {
     const generated = generateNodeModules({
       defs,
       objectInfoHash: "collide",
-      importsFrom: "comfy-sdk",
+      importsFrom: "@stepupgaming/comfy-workflows",
     });
     mkdirSync(genDir, { recursive: true });
     for (const f of generated.files) writeFileSync(join(genDir, f.path), f.content);

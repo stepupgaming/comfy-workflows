@@ -40,6 +40,24 @@ importers:
         specifier: ^3.5.13
         version: 3.5.42(typescript@5.9.3)
 
+  packages/workflow-hires:
+    devDependencies:
+      '@stepupgaming/comfy-workflows':
+        specifier: workspace:*
+        version: link:../..
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  packages/workflow-t2i:
+    devDependencies:
+      '@stepupgaming/comfy-workflows':
+        specifier: workspace:*
+        version: link:../..
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
 packages:
 
   '@algolia/abtesting@1.23.0':

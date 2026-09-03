@@ -2,7 +2,7 @@
  * Lossless JSON parsing: like JSON.parse, but integer literals beyond JS's
  * safe range become `bigint` instead of silently losing precision.
  *
- * This is what makes `comfy import` trustworthy: a workflow file containing
+ * This is what makes `cwf import` trustworthy: a workflow file containing
  * `"seed": 18446744073709551615` round-trips exactly, even though plain
  * JSON.parse would corrupt it. Exponents and decimals follow IEEE semantics
  * (they are not exactly-representable integers to begin with).

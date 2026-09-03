@@ -47,7 +47,7 @@ export function img2img(opts: {
   const decoded = g.add(latent.VAEDecode, { samples: sampled.LATENT, vae: ckpt.VAE });
   g.add(image.SaveImage, {
     images: decoded.IMAGE,
-    filename_prefix: opts.filenamePrefix ?? "comfy-sdk-img2img",
+    filename_prefix: opts.filenamePrefix ?? "cwf-img2img",
   });
   const graph = g.toGraph();
   if (opts.loras?.length) applyLoras(graph, opts.loras);
@@ -107,7 +107,7 @@ export function inpaint(opts: {
   const decoded = g.add(latent.VAEDecode, { samples: sampled.LATENT, vae: ckpt.VAE });
   g.add(image.SaveImage, {
     images: decoded.IMAGE,
-    filename_prefix: opts.filenamePrefix ?? "comfy-sdk-inpaint",
+    filename_prefix: opts.filenamePrefix ?? "cwf-inpaint",
   });
   return g.toGraph();
 }
@@ -170,7 +170,7 @@ export function outpaint(opts: {
   const decoded = g.add(latent.VAEDecode, { samples: sampled.LATENT, vae: ckpt.VAE });
   g.add(image.SaveImage, {
     images: decoded.IMAGE,
-    filename_prefix: opts.filenamePrefix ?? "comfy-sdk-outpaint",
+    filename_prefix: opts.filenamePrefix ?? "cwf-outpaint",
   });
   return g.toGraph();
 }

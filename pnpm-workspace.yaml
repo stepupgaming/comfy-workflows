@@ -1,6 +1,8 @@
 # pnpm workspace + settings file (pnpm >= 10 reads config from here).
 packages:
   - docs
+  - packages/workflow-t2i
+  - packages/workflow-hires
 allowBuilds:
   esbuild: true
 onlyBuiltDependencies:

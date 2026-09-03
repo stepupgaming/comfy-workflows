@@ -273,4 +273,191 @@ describe("CLI", () => {
     expect(res.code).toBe(0);
     expect(res.stdout).toContain('"seed":18446744073709551615');
   });
+
+  it("pack validates the first-party t2i package", async () => {
+    const res = await comfy(["pack", join(__dirname, "..", "packages", "workflow-t2i")]);
+    expect(res.code).toBe(0);
+    expect(res.stdout).toContain("ok: package is publishable");
+  });
+
+  it("pack --json reports diagnostics machine-readably", async () => {
+    const res = await comfy(["pack", join(__dirname, "..", "packages", "workflow-hires"), "--json"]);
+    expect(res.code).toBe(0);
+    const body = jsonOf<{ ok: boolean; manifest: string; nodeClasses: { derived: string[] } }>(
+      res.stdout,
+    );
+    expect(body.ok).toBe(true);
+    expect(body.manifest).toBe("hires-text-to-image");
+    expect(body.nodeClasses.derived).toContain("KSamplerAdvanced");
+  });
+
+  it("inspect reads manifest+IR without executing package JS", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "cwf-evil-"));
+    const fs = await import("node:fs/promises");
+    await fs.writeFile(
+      join(dir, "package.json"),
+      JSON.stringify({ name: "evil-pkg", version: "0.0.0", comfyWorkflow: "./comfy.workflow.json" }),
+    );
+    await fs.writeFile(
+      join(dir, "comfy.workflow.json"),
+      JSON.stringify({
+        specVersion: 1,
+        name: "evil",
+        title: "Evil",
+        entry: "./workflow.ir.json",
+        parameters: {},
+        outputs: [],
+        requires: { nodeClasses: ["EmptyLatentImage"], nodePacks: [], models: [] },
+      }),
+    );
+    await fs.writeFile(
+      join(dir, "workflow.ir.json"),
+      JSON.stringify({
+        irVersion: 1,
+        nodes: { n1: { type: "EmptyLatentImage", params: { width: 64, height: 64, batch_size: 1 }, inputs: {} } },
+        outputs: [],
+      }),
+    );
+    // Throws the instant it is imported — inspect must never import it.
+    await fs.writeFile(join(dir, "index.js"), `throw new Error("pwned");`);
+    const res = await comfy(["inspect", dir, "--json"]);
+    expect(res.code).toBe(0);
+    const body = jsonOf<{ ok: boolean; manifest: { name: string }; nodeClasses: string[] }>(res.stdout);
+    expect(body.ok).toBe(true);
+    expect(body.manifest.name).toBe("evil");
+    expect(body.nodeClasses).toEqual(["EmptyLatentImage"]);
+  });
+
+  it("inspect --url reports live node availability", async () => {
+    const { createServer } = await import("node:http");
+    const liveObjectInfo = {
+      EmptyLatentImage: {
+        input: { required: {} },
+        output: ["LATENT"],
+        output_name: ["LATENT"],
+        name: "Empty Latent Image",
+        category: "latent",
+        output_node: false,
+      },
+    };
+    const server = createServer((req, res) => {
+      if ((req.url ?? "").endsWith("/object_info")) {
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify(liveObjectInfo));
+        return;
+      }
+      res.statusCode = 404;
+      res.end("not found");
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const port = (server.address() as { port: number }).port;
+    try {
+      const res = await comfy([
+        "inspect",
+        join(__dirname, "..", "packages", "workflow-t2i"),
+        "--url",
+        `http://127.0.0.1:${port}`,
+        "--json",
+      ]);
+      expect(res.code).toBe(0);
+      const body = jsonOf<{ live: { available: string[]; missing: string[] } }>(res.stdout);
+      // Mock server only knows EmptyLatentImage — the rest must be missing.
+      expect(body.live.available).toEqual(["EmptyLatentImage"]);
+      expect(body.live.missing).toContain("KSampler");
+    } finally {
+      server.close();
+    }
+  });
+
+  it("run resolves an installed package by name without running its JS", async () => {
+    // Simulate `pnpm add evil-pkg`: a node_modules dir with the package.
+    const dir = mkdtempSync(join(tmpdir(), "cwf-consumer-"));
+    const fs = await import("node:fs/promises");
+    const { createServer } = await import("node:http");
+    const pkgDir = join(dir, "node_modules", "evil-run-pkg");
+    await fs.mkdir(pkgDir, { recursive: true });
+    await fs.writeFile(
+      join(pkgDir, "package.json"),
+      JSON.stringify({ name: "evil-run-pkg", version: "0.0.0", comfyWorkflow: "./comfy.workflow.json" }),
+    );
+    await fs.writeFile(
+      join(pkgDir, "comfy.workflow.json"),
+      JSON.stringify({
+        specVersion: 1,
+        name: "evil-run",
+        title: "Evil Run",
+        entry: "./workflow.ir.json",
+        parameters: {},
+        outputs: [],
+        requires: { nodeClasses: [], nodePacks: [], models: [] },
+      }),
+    );
+    await fs.writeFile(
+      join(pkgDir, "workflow.ir.json"),
+      JSON.stringify({
+        irVersion: 1,
+        nodes: { n1: { type: "EmptyLatentImage", params: { width: 64, height: 64, batch_size: 1 }, inputs: {} } },
+        outputs: [],
+      }),
+    );
+    await fs.writeFile(join(pkgDir, "index.js"), `throw new Error("pwned");`);
+    // Minimal mock Comfy: object_info + prompt + history with no outputs.
+    const server = createServer((req, res) => {
+      const url = req.url ?? "";
+      res.setHeader("Content-Type", "application/json");
+      if (url.endsWith("/object_info")) {
+        res.end(
+          JSON.stringify({
+            EmptyLatentImage: {
+              input: {
+                required: {
+                  width: ["INT", { default: 512, min: 16 }],
+                  height: ["INT", { default: 512, min: 16 }],
+                  batch_size: ["INT", { default: 1, min: 1 }],
+                },
+              },
+              output: ["LATENT"],
+              output_name: ["LATENT"],
+              name: "Empty Latent Image",
+              category: "latent",
+              output_node: false,
+            },
+          }),
+        );
+        return;
+      }
+      if (url.endsWith("/prompt")) {
+        res.end(JSON.stringify({ prompt_id: "pkg-run", number: 1 }));
+        return;
+      }
+      if (url.includes("/history/")) {
+        res.end(JSON.stringify({ "pkg-run": { status: { completed: true }, outputs: {} } }));
+        return;
+      }
+      res.statusCode = 404;
+      res.end("not found");
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    const port = (server.address() as { port: number }).port;
+    try {
+      // Run from the consumer dir so bare-specifier resolution finds it.
+      // --import needs an absolute jiti path since cwd no longer resolves it.
+      const entry = join(__dirname, "..", "src", "cli", "bin.ts");
+      const { pathToFileURL } = await import("node:url");
+      const jitiRegister = pathToFileURL(
+        join(__dirname, "..", "node_modules", "jiti", "lib", "jiti-register.mjs"),
+      ).href;
+      const { execFile } = await import("node:child_process");
+      const { promisify } = await import("node:util");
+      const runChild = promisify(execFile);
+      const { stdout } = await runChild(
+        "node",
+        ["--import", jitiRegister, entry, "run", "evil-run-pkg", "--url", `http://127.0.0.1:${port}`],
+        { cwd: dir },
+      );
+      expect(stdout).toContain('"ok": true');
+    } finally {
+      server.close();
+    }
+  }, 30_000);
 });

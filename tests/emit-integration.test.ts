@@ -51,12 +51,16 @@ describe("custom-node codegen → import → emit → compile (synthetic, not in
 
   it("generates specs for the custom class with an explicit module contract", () => {
     const defs = parseObjectInfo(liveStyleObjectInfo() as never);
-    const out = generateNodeModules({ defs, objectInfoHash: "test", importsFrom: "comfy-sdk" });
+    const out = generateNodeModules({
+      defs,
+      objectInfoHash: "test",
+      importsFrom: "@stepupgaming/comfy-workflows",
+    });
     const registryFile = out.files.find((f) => f.path === "registry.ts");
-    expect(registryFile?.content).toContain(`from "comfy-sdk"`);
+    expect(registryFile?.content).toContain(`from "@stepupgaming/comfy-workflows"`);
     const categoryFile = out.files.find((f) => f.path === "comfy_sdk_test.ts");
     expect(categoryFile?.content).toContain(`export const ${CUSTOM_CLASS}`);
-    expect(categoryFile?.content).toContain(`from "comfy-sdk"`);
+    expect(categoryFile?.content).toContain(`from "@stepupgaming/comfy-workflows"`);
   });
 
   it("end-to-end: import → emit → emitted workflow.ts loads and compiles", async () => {
@@ -68,7 +72,7 @@ describe("custom-node codegen → import → emit → compile (synthetic, not in
     const generated = generateNodeModules({
       defs,
       objectInfoHash: "test",
-      importsFrom: "comfy-sdk",
+      importsFrom: "@stepupgaming/comfy-workflows",
     });
     mkdirSync(genDir, { recursive: true });
     for (const f of generated.files) writeFileSync(join(genDir, f.path), f.content);
@@ -103,18 +107,18 @@ describe("custom-node codegen → import → emit → compile (synthetic, not in
     writeFileSync(tsPath, ts);
 
     // 4. The emitted file must reference the custom node via the generated
-    //    registry (not comfy-sdk/nodes, which lacks it) and must LOAD.
+    //    registry (not @stepupgaming/comfy-workflows/nodes, which lacks it) and must LOAD.
     expect(ts).toContain(`from "./comfy-nodes/registry.js"`);
     expect(ts).not.toContain(`${CUSTOM_CLASS} = g.rawNode`);
 
     // jiti-load the emitted file with the same alias map the CLI uses.
     const jiti = createJiti(import.meta.url, {
       alias: {
-        "comfy-sdk/nodes": new URL("../src/nodes/index.ts", import.meta.url).pathname.replace(
-          /^\/([A-Z]:)/,
-          "$1",
-        ),
-        "comfy-sdk": new URL("../src/index.ts", import.meta.url).pathname.replace(
+        "@stepupgaming/comfy-workflows/nodes": new URL(
+          "../src/nodes/index.ts",
+          import.meta.url,
+        ).pathname.replace(/^\/([A-Z]:)/, "$1"),
+        "@stepupgaming/comfy-workflows": new URL("../src/index.ts", import.meta.url).pathname.replace(
           /^\/([A-Z]:)/,
           "$1",
         ),
@@ -153,7 +157,11 @@ describe("custom-node codegen → import → emit → compile (synthetic, not in
         category: "test/b",
       },
     } as never);
-    const out = generateNodeModules({ defs, objectInfoHash: "test", importsFrom: "comfy-sdk" });
+    const out = generateNodeModules({
+      defs,
+      objectInfoHash: "test",
+      importsFrom: "@stepupgaming/comfy-workflows",
+    });
     const registrySrc = out.files.find((f) => f.path === "registry.ts")?.content ?? "";
     // Both classes got distinct exported identifiers...
     const [id1, id2] = [out.identifiers["My Node!"], out.identifiers["My-Node?"]];
@@ -205,11 +213,11 @@ describe("custom-node codegen → import → emit → compile (synthetic, not in
     );
     const jitiCli = createJiti(import.meta.url, {
       alias: {
-        "comfy-sdk/nodes": new URL("../src/nodes/index.ts", import.meta.url).pathname.replace(
-          /^\/([A-Z]:)/,
-          "$1",
-        ),
-        "comfy-sdk": new URL("../src/index.ts", import.meta.url).pathname.replace(
+        "@stepupgaming/comfy-workflows/nodes": new URL(
+          "../src/nodes/index.ts",
+          import.meta.url,
+        ).pathname.replace(/^\/([A-Z]:)/, "$1"),
+        "@stepupgaming/comfy-workflows": new URL("../src/index.ts", import.meta.url).pathname.replace(
           /^\/([A-Z]:)/,
           "$1",
         ),

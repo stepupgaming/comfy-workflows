@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://stepupgaming.github.io/comfy-workflows/schema/comfy.workflow.schema.json",
+  "title": "comfy.workflow.json — Comfy Workflows package manifest",
+  "description": "Versioned manifest for a Comfy Workflows npm package. Pure data: inspectable without executing package code.",
+  "type": "object",
+  "required": ["specVersion", "name", "title", "entry", "parameters", "outputs", "requires"],
+  "additionalProperties": false,
+  "properties": {
+    "specVersion": {
+      "description": "Manifest spec version. Versioned from day one.",
+      "const": 1
+    },
+    "name": {
+      "description": "Machine identity, e.g. \"text-to-image\". Unique within its npm package.",
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "description": "Human title, e.g. \"Text to Image\".",
+      "type": "string",
+      "minLength": 1
+    },
+    "entry": {
+      "description": "Package-relative path to the canonical IR document.",
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "^([A-Za-z]:[\\\\/]|/)" }
+    },
+    "description": { "type": "string" },
+    "coreVersion": {
+      "description": "Minimum core package version (semver range) this package was built against.",
+      "type": "string"
+    },
+    "parameters": {
+      "description": "Template parameters, keyed by name. Must cohere with the IR's declared params.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type", "required"],
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "description": "Widget kind. \"integer\" is accepted as an alias of \"int\".",
+            "type": "string",
+            "minLength": 1
+          },
+          "required": { "type": "boolean" },
+          "default": {
+            "description": "Default value (JSON scalar). Required params must not need one at run time."
+          },
+          "options": {
+            "type": "array",
+            "items": { "type": ["string", "number"] }
+          },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "description": "Socket type, e.g. IMAGE, LATENT.", "type": "string" }
+        }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "required": ["nodeClasses"],
+      "additionalProperties": false,
+      "properties": {
+        "nodeClasses": {
+          "description": "Required Comfy node class names — explicit or derivable from the IR.",
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "nodePacks": {
+          "description": "Node-pack names, when known. Informational in v1.",
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "models": {
+          "description": "Model/checkpoint requirements, when known. Informational in v1.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "type": "string" },
+              "name": { "type": "string" },
+              "optional": { "type": "boolean" }
+            }
+          },
+          "default": []
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "minComfyUIVersion": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

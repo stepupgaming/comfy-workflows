@@ -164,7 +164,7 @@ export function upscale(
     finalOut = scale;
   }
   const save = addRaw(base, "SaveImage", {
-    filename_prefix: opts.filenamePrefix ?? "comfy-sdk-upscale",
+    filename_prefix: opts.filenamePrefix ?? "cwf-upscale",
   });
   base.nodes[save].inputs["images"] = { node: finalOut, out: finalSlot };
   return base;

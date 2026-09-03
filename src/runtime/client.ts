@@ -244,7 +244,7 @@ export function createClient(opts: ClientOptions): ComfyClient {
       const graph = input.kind === "graph" ? input.graph : undefined;
       const prepared = await prepareBody(input, defs);
       // Submit. Body bytes are the lossless JSON string verbatim.
-      const clientId = `comfy-sdk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const clientId = `cwf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       // The submission envelope is assembled by string concatenation so the
       // prompt body (with raw bigint literals) is never parsed back into JS
       // values — parsing here would silently destroy >2^53 integers.

@@ -109,7 +109,7 @@ d("live integration (COMFY_URL)", () => {
             },
             "7": {
               class_type: "SaveImage",
-              inputs: { images: ["6", 0], filename_prefix: "comfy-sdk-live" },
+              inputs: { images: ["6", 0], filename_prefix: "cwf-live" },
               _meta: { title: "save" },
             },
           }
@@ -122,7 +122,7 @@ d("live integration (COMFY_URL)", () => {
             },
             "2": {
               class_type: "SaveImage",
-              inputs: { images: ["1", 0], filename_prefix: "comfy-sdk-live" },
+              inputs: { images: ["1", 0], filename_prefix: "cwf-live" },
               _meta: { title: "save" },
             },
           };
@@ -173,7 +173,7 @@ d("live integration (COMFY_URL)", () => {
         denoise: 1,
       });
       const dec = g.add(generated.VAEDecode, { samples: ks.LATENT, vae: ckpt.VAE });
-      g.add(generated.SaveImage, { images: dec.IMAGE, filename_prefix: "comfy-sdk-live" });
+      g.add(generated.SaveImage, { images: dec.IMAGE, filename_prefix: "cwf-live" });
       graph = g.toGraph();
     } else {
       // Model-free path for instances without checkpoints (fresh/CPU installs).
@@ -183,7 +183,7 @@ d("live integration (COMFY_URL)", () => {
         { width: 64, height: 64, batch_size: 1, color: 16711680 },
         { outputs: [{ name: "IMAGE", type: "IMAGE" }] },
       );
-      const save = g.rawNode("SaveImage", { filename_prefix: "comfy-sdk-live" });
+      const save = g.rawNode("SaveImage", { filename_prefix: "cwf-live" });
       g.connectInput(save.id, "images", img.slots[0]);
       g.output(save.out(0) === undefined ? img.slots[0] : img.slots[0]);
       graph = g.toGraph();

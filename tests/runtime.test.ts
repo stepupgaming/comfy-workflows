@@ -195,7 +195,7 @@ describe("runtime client", () => {
     const { mkdtempSync, writeFileSync } = await import("node:fs");
     const { tmpdir } = await import("node:os");
     const { join } = await import("node:path");
-    const dir = mkdtempSync(join(tmpdir(), "comfy-sdk-"));
+    const dir = mkdtempSync(join(tmpdir(), "cwf-"));
     const photo = join(dir, "photo.png");
     writeFileSync(photo, "fake-png-bytes");
     const g = workflow("assets");

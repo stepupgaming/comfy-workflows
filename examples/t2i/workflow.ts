@@ -2,12 +2,12 @@
  * examples/t2i/workflow.ts — a authored text→image workflow.
  *
  * TypeScript is the canonical authoring representation. Compile with:
- *   comfy compile examples/t2i/workflow.ts -o dist/t2i.api.json
+ *   cwf compile examples/t2i/workflow.ts -o dist/t2i.api.json
  * or run directly (JSON never hits disk):
- *   comfy run examples/t2i/workflow.ts --url http://127.0.0.1:8188 --out out/
+ *   cwf run examples/t2i/workflow.ts --url http://127.0.0.1:8188 --out out/
  */
-import { workflow, type Graph } from "comfy-sdk";
-import { loaders, conditioning, latent, sampling, image } from "comfy-sdk/nodes";
+import { workflow, type Graph } from "@stepupgaming/comfy-workflows";
+import { loaders, conditioning, latent, sampling, image } from "@stepupgaming/comfy-workflows/nodes";
 
 export function build(): Graph {
   const g = workflow("t2i-example");

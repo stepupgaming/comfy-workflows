@@ -1,7 +1,7 @@
 {
-  "name": "comfy-sdk",
+  "name": "@stepupgaming/comfy-workflows",
   "version": "0.1.0",
-  "description": "Code-first ComfyUI workflow system: Graph IR is the canonical workflow representation; ComfyUI is the execution backend.",
+  "description": "Comfy Workflows — code-first, typed, composable workflows for ComfyUI.",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -27,16 +27,48 @@
       "types": "./dist/ir/index.d.ts",
       "default": "./dist/ir/index.js"
     },
-    "./package.json": "./package.json"
+    "./wfpack": {
+      "types": "./dist/wfpack/index.d.ts",
+      "default": "./dist/wfpack/index.js"
+    },
+    "./schema": "./schema/comfy.workflow.schema.json",
+    "./package.json": "./package.json",
+    "./recipes": {
+      "types": "./dist/recipes/index.d.ts",
+      "default": "./dist/recipes/index.js"
+    }
   },
   "bin": {
-    "comfy": "./dist/cli/bin.js"
+    "comfy-workflows": "./dist/cli/bin.js",
+    "cwf": "./dist/cli/bin.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "schema"
   ],
+  "sideEffects": false,
+  "keywords": [
+    "comfyui",
+    "comfy-workflows",
+    "comfy-workflow",
+    "workflows",
+    "typescript",
+    "code-first"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stepupgaming/comfy-workflows.git"
+  },
+  "homepage": "https://stepupgaming.github.io/comfy-workflows/",
+  "bugs": {
+    "url": "https://github.com/stepupgaming/comfy-workflows/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
+    "build:packages": "jiti scripts/build-workflow-packages.mjs && pnpm -r --filter ./packages/* exec tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

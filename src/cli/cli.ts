@@ -13,6 +13,15 @@ import { importComfyJson } from "../import/index.js";
 import { parseGraph, serializeGraph } from "../ir/serialize.js";
 import type { Graph } from "../ir/types.js";
 import { instantiateTemplate } from "../ir/template.js";
+import {
+  WORKFLOW_MANIFEST_FILENAME,
+  WORKFLOW_PACKAGE_JSON_KEY,
+  WORKFLOW_PACKAGE_KEYWORDS,
+  checkPackageCoherence,
+  deriveNodeClasses,
+  discoverPackage,
+  loadPackageGraph,
+} from "../wfpack/index.js";
 import { createClient } from "../runtime/client.js";
 import { captureLock, writeLock, readLockAt, lockDrift, type NodePackInfo } from "../lock/lock.js";
 import { explainGraph } from "../recipes/explain.js";
@@ -21,8 +30,9 @@ import type { EmitterRegistry } from "../emit-ts/emit.js";
 import { parseJsonLossless } from "../lossless-parse.js";
 
 /**
- * `comfy` CLI — the scriptable surface for agents:
+ * `cwf` CLI — the scriptable surface for agents:
  *   import | snapshot | lock | codegen | compile | validate | run | catalog | explain
+ *   pack | inspect (workflow packages)
  *
  * Failures print machine-readable JSON errors to stderr and exit non-zero.
  */
@@ -113,6 +123,10 @@ export async function cli(argv: string[]): Promise<number> {
         return await cmdValidate(positional, flags);
       case "run":
         return await cmdRun(positional, flags);
+      case "pack":
+        return await cmdPack(positional, flags);
+      case "inspect":
+        return await cmdInspect(positional, flags);
       case "catalog":
         return await cmdCatalog(positional, flags);
       case "explain":
@@ -133,17 +147,19 @@ export async function cli(argv: string[]): Promise<number> {
 function printHelp(): void {
   process.stdout.write(
     [
-      "comfy — code-first ComfyUI workflow system",
+      "cwf — code-first, typed, composable workflows for ComfyUI",
       "",
-      "  comfy import <workflow.json> [--out foo.ir.json] [--ts dir/workflow.ts] [--from defs.json]",
-      "  comfy snapshot --url URL -o object_info.json",
-      "  comfy lock --url URL [-o comfy.lock.json]",
-      "  comfy codegen [--url URL | --from snapshot.json] -o src/nodes/gen [--exact-combos]",
-      "  comfy compile <workflow.ts | graph.ir.json> [-o out.api.json] [--defs defs.json] [--pretty]",
-      "  comfy validate <file> [--url URL] [--defs defs.json]",
-      "  comfy run <file> --url URL [--param k=v ...] [--out outdir]",
-      "  comfy explain <file | workflow.ts>   # what does this expand into?",
-      "  comfy catalog [query] [--from catalog.json]",
+      "  cwf import <workflow.json> [--out foo.ir.json] [--ts dir/workflow.ts] [--from defs.json]",
+      "  cwf snapshot --url URL -o object_info.json",
+      "  cwf lock --url URL [-o comfy.lock.json]",
+      "  cwf codegen [--url URL | --from snapshot.json] -o src/nodes/gen [--exact-combos]",
+      "  cwf compile <workflow.ts | graph.ir.json> [-o out.api.json] [--defs defs.json] [--pretty]",
+      "  cwf validate <file> [--url URL] [--defs defs.json]",
+      "  cwf run <file> --url URL [--param k=v ...] [--out outdir]",
+      "  cwf pack [dir] [--json]                    # validate a workflow package",
+      "  cwf inspect <package-or-path> [--url URL] [--json]  # inspect without running JS",
+      "  cwf explain <file | workflow.ts>   # what does this expand into?",
+      "  cwf catalog [query] [--from catalog.json]",
       "",
     ].join("\n"),
   );
@@ -219,7 +235,7 @@ function bundledDefsWithHash(): { defs: NodeDefs; objectInfoHash?: string } {
   const gen = bundledDefsJson as { defs?: NodeDefs; objectInfoHash?: string };
   if (!gen?.defs) {
     throw new Error(
-      "Bundled node defs missing — run `comfy codegen` in your project and pass --defs <path>.",
+      "Bundled node defs missing — run `cwf codegen` in your project and pass --defs <path>.",
     );
   }
   return { defs: gen.defs, objectInfoHash: gen.objectInfoHash };
@@ -305,13 +321,43 @@ function looksLikeIr(text: string): boolean {
   return /"irVersion"\s*:/.test(text);
 }
 
-/** Alias map so `import … from "comfy-sdk…"` resolves inside this repo (dev: src, published: dist). */
+/**
+ * Resolve a `run`/`validate` input: an existing file path (workflow.ts, IR
+ * JSON, Comfy JSON) wins; otherwise the input is treated as an installed
+ * workflow package name/path whose manifest/IR is read directly — package
+ * JavaScript is never executed on this path.
+ */
+async function graphFromInputOrPackage(
+  input: string,
+  params: Record<string, unknown>,
+  defs?: NodeDefs,
+): Promise<Graph> {
+  if (existsSync(input)) return graphFromInput(input, params, defs);
+  const pkg = discoverPackage(input);
+  const graph = loadPackageGraph(pkg);
+  if (Object.keys(params).length > 0 || Object.keys(graph.params ?? {}).length > 0) {
+    return instantiateTemplate(graph, { params: params as never });
+  }
+  return graph;
+}
+
+/**
+ * Alias map so `import … from "@stepupgaming/comfy-workflows…"` resolves
+ * inside this repo (dev: src, published: dist). The legacy `comfy-sdk…`
+ * specifiers keep resolving so workflow.ts files authored before the rename
+ * still compile.
+ */
 function sdkAliases(): Record<string, string> {
   const base = existsSync(path.join(PKG_ROOT, "dist", "index.js"))
     ? path.join(PKG_ROOT, "dist")
     : path.join(PKG_ROOT, "src");
   const ext = existsSync(path.join(PKG_ROOT, "dist", "index.js")) ? "js" : "ts";
   return {
+    "@stepupgaming/comfy-workflows/nodes": path.join(base, "nodes", `index.${ext}`),
+    "@stepupgaming/comfy-workflows/runtime": path.join(base, "runtime", `index.${ext}`),
+    "@stepupgaming/comfy-workflows/ir": path.join(base, "ir", `index.${ext}`),
+    "@stepupgaming/comfy-workflows/wfpack": path.join(base, "wfpack", `index.${ext}`),
+    "@stepupgaming/comfy-workflows": path.join(base, `index.${ext}`),
     "comfy-sdk/nodes": path.join(base, "nodes", `index.${ext}`),
     "comfy-sdk/runtime": path.join(base, "runtime", `index.${ext}`),
     "comfy-sdk/ir": path.join(base, "ir", `index.${ext}`),
@@ -377,7 +423,7 @@ async function cmdImport(
   const file = positional[0];
   if (file === undefined)
     throw new Error(
-      "Usage: comfy import <workflow.json> [--out foo.ir.json] [--ts dir/workflow.ts] [--from defs.json]",
+      "Usage: cwf import <workflow.json> [--out foo.ir.json] [--ts dir/workflow.ts] [--from defs.json]",
     );
   const defs = await loadDefsAny(flag(flags, "from"));
   // Lossless parse: workflow JSON may contain integers beyond JS's safe range
@@ -397,8 +443,8 @@ async function cmdImport(
     const tsPath = flag(flags, "ts") as string;
     await mkdir(path.dirname(path.resolve(tsPath)), { recursive: true });
     // --registry <codegenDir>: route nodes to a generated custom-node registry
-    // (the output of `comfy codegen -o <dir>`), so emitted workflow.ts imports
-    // resolve even for classes absent from the SDK's built-in registry.
+    // (the output of `cwf codegen -o <dir>`), so emitted workflow.ts imports
+    // resolve even for classes absent from the package's built-in registry.
     let registries: EmitterRegistry[] | undefined;
     const registryDir = flag(flags, "registry");
     if (registryDir !== undefined) {
@@ -420,7 +466,7 @@ async function cmdImport(
       } catch {
         throw new Error(
           `Registry directory ${registryDir} has no identifiers.json — regenerate it with ` +
-            "`comfy codegen` so emitted imports use the exact generated names.",
+            "`cwf codegen` so emitted imports use the exact generated names.",
         );
       }
       const rel = path
@@ -441,7 +487,7 @@ async function cmdSnapshot(flags: Record<string, string | boolean | string[]>): 
   const url = flag(flags, "url");
   const out = flag(flags, "out");
   if (url === undefined || out === undefined)
-    throw new Error("Usage: comfy snapshot --url URL -o object_info.json");
+    throw new Error("Usage: cwf snapshot --url URL -o object_info.json");
   const client = createClient({ url });
   const objectInfo = await client.objectInfo();
   await mkdir(path.dirname(path.resolve(out)), { recursive: true });
@@ -460,7 +506,7 @@ async function cmdSnapshot(flags: Record<string, string | boolean | string[]>): 
 
 async function cmdLock(flags: Record<string, string | boolean | string[]>): Promise<number> {
   const url = flag(flags, "url");
-  if (url === undefined) throw new Error("Usage: comfy lock --url URL [-o comfy.lock.json]");
+  if (url === undefined) throw new Error("Usage: cwf lock --url URL [-o comfy.lock.json]");
   const client = createClient({ url });
   const [objectInfo, systemStats] = [
     await client.objectInfo(),
@@ -500,7 +546,7 @@ async function cmdCodegen(flags: Record<string, string | boolean | string[]>): P
   const out = flag(flags, "out");
   if (out === undefined)
     throw new Error(
-      "Usage: comfy codegen [--url URL | --from snapshot.json] -o src/nodes/gen [--exact-combos]",
+      "Usage: cwf codegen [--url URL | --from snapshot.json] -o src/nodes/gen [--exact-combos]",
     );
   const exactCombos = flags["exact-combos"] === true;
   const url = flag(flags, "url");
@@ -513,7 +559,7 @@ async function cmdCodegen(flags: Record<string, string | boolean | string[]>): P
       defs: parseObjectInfo(raw as never),
       objectInfoHash: hash,
       exactCombos,
-      importsFrom: "comfy-sdk",
+      importsFrom: "@stepupgaming/comfy-workflows",
     });
     await writeGenerated(out, result.files);
     process.stdout.write(
@@ -532,7 +578,7 @@ async function cmdCodegen(flags: Record<string, string | boolean | string[]>): P
       defs: snapshot.defs,
       objectInfoHash: snapshot.objectInfoHash,
       exactCombos,
-      importsFrom: "comfy-sdk",
+      importsFrom: "@stepupgaming/comfy-workflows",
     });
     await writeGenerated(out, result.files);
     process.stdout.write(
@@ -545,7 +591,7 @@ async function cmdCodegen(flags: Record<string, string | boolean | string[]>): P
     );
     return 0;
   }
-  throw new Error("Usage: comfy codegen [--url URL | --from snapshot.json] -o src/nodes/gen");
+  throw new Error("Usage: cwf codegen [--url URL | --from snapshot.json] -o src/nodes/gen");
 }
 
 async function writeGenerated(
@@ -563,7 +609,7 @@ async function cmdCompile(
   const input = positional[0];
   if (input === undefined)
     throw new Error(
-      "Usage: comfy compile <workflow.ts | graph.ir.json> [-o out.api.json] [--lock comfy.lock.json]",
+      "Usage: cwf compile <workflow.ts | graph.ir.json> [-o out.api.json] [--lock comfy.lock.json]",
     );
   const url = flag(flags, "url");
   const client = url !== undefined ? createClient({ url }) : undefined;
@@ -618,7 +664,7 @@ async function cmdValidate(
   const input = positional[0];
   if (input === undefined)
     throw new Error(
-      "Usage: comfy validate <file> [--url URL] [--defs defs.json] [--lock comfy.lock.json]",
+      "Usage: cwf validate <file> [--url URL] [--defs defs.json] [--lock comfy.lock.json]",
     );
   const url = flag(flags, "url");
   const client = url !== undefined ? createClient({ url }) : undefined;
@@ -661,7 +707,7 @@ async function cmdRun(
   const url = flag(flags, "url");
   if (input === undefined || url === undefined) {
     throw new Error(
-      "Usage: comfy run <file> --url URL [--param k=v ...] [--out outdir] [--defs defs.json] [--lock comfy.lock.json]",
+      "Usage: cwf run <file> --url URL [--param k=v ...] [--out outdir] [--defs defs.json] [--lock comfy.lock.json]",
     );
   }
   const client = createClient({ url });
@@ -670,7 +716,7 @@ async function cmdRun(
     process.stderr.write(JSON.stringify({ info: "defs", source: "live", url }) + "\n");
   }
   await warnLockDrift(defsSources, flag(flags, "lock"), { defsUrl: url, client });
-  const graph = await graphFromInput(
+  const graph = await graphFromInputOrPackage(
     input,
     parseParams(flagList(flags, "param")),
     defsSources.defs,
@@ -705,12 +751,164 @@ async function cmdRun(
   return 0;
 }
 
-async function cmdExplain(
+async function cmdPack(
   positional: string[],
   flags: Record<string, string | boolean | string[]>,
 ): Promise<number> {
+  const dir = positional[0] ?? process.cwd();
+  const pkg = discoverPackage(dir);
+  const graph = loadPackageGraph(pkg);
+  const report = checkPackageCoherence(pkg.manifest, graph);
+
+  // Package-metadata checks (beyond manifest/IR coherence).
+  const diagnostics = [...report.diagnostics];
+  const pj = pkg.packageJson;
+  if (typeof pj["name"] !== "string" || (pj["name"] as string).length === 0)
+    diagnostics.push({
+      level: "error",
+      code: "E_PACK_NO_NAME",
+      message: "package.json has no name.",
+    });
+  const keywords = Array.isArray(pj["keywords"]) ? (pj["keywords"] as unknown[]) : [];
+  for (const kw of WORKFLOW_PACKAGE_KEYWORDS) {
+    if (!keywords.includes(kw))
+      diagnostics.push({
+        level: "warning",
+        code: "W_PACK_KEYWORD",
+        message: `package.json keywords omits "${kw}" (discoverability).`,
+        hint: `Add all of: ${WORKFLOW_PACKAGE_KEYWORDS.join(", ")}.`,
+      });
+  }
+  if (pj[WORKFLOW_PACKAGE_JSON_KEY] === undefined)
+    diagnostics.push({
+      level: "warning",
+      code: "W_PACK_NO_POINTER",
+      message: `package.json has no "${WORKFLOW_PACKAGE_JSON_KEY}" pointer (manifest was found by filename convention).`,
+      hint: `Add "${WORKFLOW_PACKAGE_JSON_KEY}": "./${WORKFLOW_MANIFEST_FILENAME}".`,
+    });
+
+  const asJson = flags["json"] === true;
+  const errors = diagnostics.filter((d) => d.level === "error");
+  if (asJson) {
+    process.stdout.write(
+      JSON.stringify(
+        {
+          ok: errors.length === 0,
+          dir: pkg.dir,
+          name: pj["name"] ?? null,
+          version: pj["version"] ?? null,
+          manifest: pkg.manifest.name,
+          entry: pkg.manifest.entry,
+          nodeClasses: report.nodeClasses,
+          diagnostics,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+  } else {
+    process.stdout.write(`pack ${pkg.dir}\n`);
+    process.stdout.write(`  package: ${String(pj["name"] ?? "?")} ${String(pj["version"] ?? "")}\n`);
+    process.stdout.write(
+      `  workflow: ${pkg.manifest.title} (${pkg.manifest.name}) → ${pkg.manifest.entry}\n`,
+    );
+    process.stdout.write(`  nodes: ${report.nodeClasses.derived.join(", ") || "—"}\n`);
+    for (const d of diagnostics)
+      process.stdout.write(`  ${d.level === "error" ? "✗" : "⚠"} [${d.code}] ${d.message}\n`);
+    process.stdout.write(errors.length === 0 ? "  ok: package is publishable\n" : `  ok: false (${errors.length} error(s))\n`);
+  }
+  return errors.length === 0 ? 0 : 1;
+}
+
+async function cmdInspect(
+  positional: string[],
+  flags: Record<string, string | boolean | string[]>,
+): Promise<number> {
+  const spec = positional[0];
+  if (spec === undefined) throw new Error("Usage: cwf inspect <package-or-path> [--url URL] [--json]");
+  // Discovery + IR load only — package JS is never executed.
+  const pkg = discoverPackage(spec);
+  const graph = loadPackageGraph(pkg);
+  // Consumer-facing parameter table comes from the manifest (the contract);
+  // the IR template is the source of truth `pack` checks it against.
+  const params = Object.entries(pkg.manifest.parameters).map(([name, p]) => ({
+    name,
+    required: p.required,
+    type: p.type,
+    description: p.description,
+  }));
+  const nodeClasses = deriveNodeClasses(graph);
+  const url = flag(flags, "url");
+
+  // Optional live compatibility: which required classes does the server have?
+  let live: { available: string[]; missing: string[]; url: string } | undefined;
+  if (url !== undefined) {
+    const client = createClient({ url });
+    const info = await client.objectInfo();
+    const have = new Set(Object.keys(info));
+    live = {
+      url,
+      available: nodeClasses.filter((c) => have.has(c)),
+      missing: nodeClasses.filter((c) => !have.has(c)),
+    };
+  }
+
+  if (flags["json"] === true) {
+    process.stdout.write(
+      JSON.stringify(
+        {
+          ok: true,
+          package: { name: pkg.packageJson["name"] ?? null, version: pkg.packageJson["version"] ?? null, dir: pkg.dir },
+          manifest: pkg.manifest,
+          templateParams: params,
+          nodeClasses,
+          ...(live !== undefined ? { live } : {}),
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    return 0;
+  }
+  const lines: string[] = [];
+  lines.push(`${pkg.manifest.title} (${pkg.manifest.name})`);
+  if (pkg.manifest.description) lines.push(`  ${pkg.manifest.description}`);
+  lines.push(`  package: ${String(pkg.packageJson["name"] ?? spec)} ${String(pkg.packageJson["version"] ?? "")}`);
+  lines.push(`  entry: ${pkg.manifest.entry}`);
+  lines.push(`  params:`);
+  for (const p of params)
+    lines.push(
+      `    ${p.required ? "●" : "○"} ${p.name}${p.type ? ` (${p.type})` : ""}${p.description ? ` — ${p.description}` : ""}`,
+    );
+  if (params.length === 0) lines.push(`    (none — concrete graph)`);
+  lines.push(`  outputs:`);
+  for (const o of pkg.manifest.outputs) lines.push(`    ${o.name} : ${o.type}`);
+  lines.push(`  requires:`);
+  for (const c of nodeClasses) {
+    const mark = live === undefined ? " " : live.available.includes(c) ? "✓" : "✗";
+    lines.push(`    ${mark} ${c}`);
+  }
+  if (live !== undefined) {
+    lines.push(
+      live.missing.length === 0
+        ? `  live ${live.url}: all ${nodeClasses.length} node classes available`
+        : `  live ${live.url}: MISSING ${live.missing.join(", ")}`,
+    );
+  }
+  if (pkg.manifest.requires.models.length > 0) {
+    lines.push(`  models:`);
+    for (const m of pkg.manifest.requires.models)
+      lines.push(`    ${m.kind}: ${m.name}${m.optional ? " (optional)" : ""}`);
+  }
+  process.stdout.write(lines.join("\n") + "\n");
+  return 0;
+}
+
+async function cmdExplain(  positional: string[],
+  flags: Record<string, string | boolean | string[]>,
+): Promise<number> {
   const input = positional[0];
-  if (input === undefined) throw new Error("Usage: comfy explain <file | workflow.ts>");
+  if (input === undefined) throw new Error("Usage: cwf explain <file | workflow.ts>");
   const graph = await graphFromInput(
     input,
     parseParams(flagList(flags, "param")),
@@ -737,7 +935,7 @@ async function cmdCatalog(
     const json = JSON.parse(await readFile(from, "utf8")) as { nodes?: typeof entries };
     entries = json.nodes ?? (json as unknown as typeof entries);
   } catch {
-    throw new Error(`Catalog not found at ${from}; run \`comfy codegen\` first or pass --from`);
+    throw new Error(`Catalog not found at ${from}; run \`cwf codegen\` first or pass --from`);
   }
   const hits = entries.filter((e) => {
     if (query === "") return true;
