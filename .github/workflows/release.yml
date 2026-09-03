@@ -33,7 +33,8 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          registry-url: "https://registry.npmjs.org"
+          # Do NOT set registry-url. setup-node would inject a dummy
+          # NODE_AUTH_TOKEN that overrides OIDC and 404s trusted publishing.
       # npm trusted publishing + provenance need npm >= 11.5.1.
       - run: npm install -g npm@latest
       - run: pnpm install --frozen-lockfile
