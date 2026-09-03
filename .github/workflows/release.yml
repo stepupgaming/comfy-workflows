@@ -33,9 +33,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          registry-url: "https://registry.npmjs.org"
-      # npm trusted publishing + provenance need npm >= 11.5.1.
-      - run: npm install -g npm@latest
+          # No registry-url: that injects a dummy NODE_AUTH_TOKEN which
+          # either 404s the PUT or, once stripped, leaves npm with ENEEDAUTH.
+      # Trusted publishing + provenance need npm >= 11.5.1.
+      - run: npm install -g npm@11
       - run: pnpm install --frozen-lockfile
       - name: Never publish from a dirty tree
         run: |
@@ -51,14 +52,11 @@ jobs:
       - run: node --import jiti/register src/cli/bin.ts pack packages/workflow-t2i
       - run: node --import jiti/register src/cli/bin.ts pack packages/workflow-hires
       - name: Publish core + workflow packages (skip versions already on the registry)
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org
         run: |
           unset NODE_AUTH_TOKEN
-          # setup-node's registry-url writes `_authToken=${NODE_AUTH_TOKEN}` and
-          # always-auth. An empty dummy token 404s/ENEEDAUTH and blocks OIDC.
-          # Keep the registry; drop only the token so npm 11+ uses GitHub OIDC.
-          if [ -n "${NPM_CONFIG_USERCONFIG:-}" ] && [ -f "$NPM_CONFIG_USERCONFIG" ]; then
-            sed -i '/_authToken/d;/always-auth/d' "$NPM_CONFIG_USERCONFIG"
-          fi
+          npm --version
           node --input-type=module -e "
             import fs from 'node:fs';
             const rows = ['.', 'packages/workflow-t2i', 'packages/workflow-hires'].map((dir) => {
@@ -71,7 +69,7 @@ jobs:
             if npm view "$name@$version" version >/dev/null 2>&1; then
               echo "$name@$version already published — skipping"
             else
-              echo "publishing $name@$version with provenance (OIDC)"
-              (cd "$dir" && npm publish --auth-type=oidc --provenance --access public)
+              echo "publishing $name@$version with provenance"
+              (cd "$dir" && npm publish --provenance --access public)
             fi
           done < pkgs.txt
