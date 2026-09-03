@@ -1,0 +1,94 @@
+/* comfy-sdk docs — brand overrides on top of the default VitePress theme.
+ *
+ * Palette: deep warm charcoal surfaces with a mint brand accent; the feature
+ * grid tints each card after one layer of the SDK hierarchy. Both modes are
+ * supported; accents stay hue-consistent across them.
+ */
+
+:root {
+  /* brand — mint (light-mode variants are darkened for contrast on white) */
+  --vp-c-brand-1: #0e8a5f;
+  --vp-c-brand-2: #0c7a54;
+  --vp-c-brand-3: #17a86f;
+  --vp-c-brand-soft: rgba(23, 168, 111, 0.14);
+
+  /* hero */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #0e8a5f 0%, #2aa198 55%, #6a9fd8 100%);
+
+  /* surfaces */
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-alt: #f6f8f7;
+  --vp-c-bg-soft: #f3f6f4;
+  --vp-c-divider: #e3e8e5;
+  --vp-c-text-1: #1d2321;
+
+  /* code blocks: keep the dark surface in both modes for contrast */
+  --vp-code-block-bg: #14161b;
+
+  /* sidebar active indicator */
+  --vp-sidebar-bg-color: var(--vp-c-bg);
+}
+
+.dark {
+  --vp-c-brand-1: #6fe3b1;
+  --vp-c-brand-2: #57d6a0;
+  --vp-c-brand-3: #3ecf8e;
+  --vp-c-brand-soft: rgba(62, 207, 142, 0.16);
+
+  --vp-c-bg: #14161b;
+  --vp-c-bg-alt: #101216;
+  --vp-c-bg-soft: #1a1d24;
+  --vp-c-divider: #262b33;
+  --vp-c-text-1: #e6ebE8;
+  --vp-c-text-2: #a3ada9;
+  --vp-c-text-3: #6f7a76;
+
+  --vp-code-block-bg: #0f1116;
+  --vp-sidebar-bg-color: var(--vp-c-bg);
+}
+
+/* Code block toolbar text stays legible on the dark surface */
+.vp-doc div[class*="language-"] + .vp-doc div[class*="language-"] {
+  margin-top: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Home feature grid — one accent per SDK layer (order matches index.md):
+ * recipes(mint) · nodes(gold) · IR(periwinkle) · import(coral) ·
+ * compile(violet) · runtime(sky)
+ * ------------------------------------------------------------------------- */
+.VPFeatures .items .item .VPFeature {
+  border-top: 1px solid var(--vp-c-divider);
+  border-left: 3px solid transparent;
+}
+
+@media (min-width: 640px) {
+  .VPFeatures .items .item:nth-child(1) .VPFeature { border-left-color: #3ecf8e; }
+  .VPFeatures .items .item:nth-child(2) .VPFeature { border-left-color: #e6c07b; }
+  .VPFeatures .items .item:nth-child(3) .VPFeature { border-left-color: #8ea6f0; }
+  .VPFeatures .items .item:nth-child(4) .VPFeature { border-left-color: #ef8f7a; }
+  .VPFeatures .items .item:nth-child(5) .VPFeature { border-left-color: #b18ef0; }
+  .VPFeatures .items .item:nth-child(6) .VPFeature { border-left-color: #64b5f6; }
+}
+
+/* ---------------------------------------------------------------------------
+ * Layer ribbon under the home feature grid
+ * ------------------------------------------------------------------------- */
+.layer-strip {
+  max-width: 896px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
+}
+.layer-strip svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.layer-strip-caption {
+  margin: 0.25rem 0 0;
+  text-align: center;
+  font-family: var(--vp-font-family-mono);
+  font-size: 13px;
+  color: var(--vp-c-text-3);
+}
