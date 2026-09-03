@@ -21,3 +21,7 @@ jobs:
       - run: pnpm build
       # Generated wrappers must be up to date with the committed defs snapshot.
       - run: pnpm codegen:core && git diff --exit-code src/nodes/gen
+      # Workflow package artifacts (IR + manifest) must be up to date.
+      - run: pnpm build:packages && git diff --exit-code packages/*/workflow.ir.json packages/*/comfy.workflow.json
+      # Core tarball must contain exactly the publishable set.
+      - run: pnpm pack --dry-run

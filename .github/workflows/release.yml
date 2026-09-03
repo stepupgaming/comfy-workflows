@@ -1,0 +1,65 @@
+name: Release
+
+# Publishes @stepupgaming/comfy-workflows + the first-party workflow
+# packages to the public npm registry with provenance.
+#
+# Steady state: create a GitHub Release (tag vX.Y.Z matching package.json
+# versions) → this workflow verifies a clean build and publishes via npm
+# trusted publishing (OIDC, no long-lived token).
+#
+# ONE-TIME BOOTSTRAP (npm requires it): trusted publishers can only be
+# attached to a package that already exists. Before the first OIDC publish:
+#   1. `npm login` as a @stepupgaming org admin,
+#   2. `npm publish --access public` the core package once from a clean tree,
+#   3. on npmjs.com, add a trusted publisher (this repo + this workflow)
+#      to each of the three packages,
+#   4. never commit an npm token — delete the login after bootstrapping.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+      # npm trusted publishing + provenance need npm >= 11.5.1.
+      - run: npm install -g npm@latest
+      - run: pnpm install --frozen-lockfile
+      - run: git status --porcelain --exit-code # never publish from a dirty tree
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm codegen:core && git diff --exit-code src/nodes/gen
+      - run: pnpm build:packages && git diff --exit-code packages/*/workflow.ir.json packages/*/comfy.workflow.json
+      - run: node --import jiti/register src/cli/bin.ts pack packages/workflow-t2i
+      - run: node --import jiti/register src/cli/bin.ts pack packages/workflow-hires
+      - name: Publish core + workflow packages (skip versions already on the registry)
+        run: |
+          node --input-type=module -e "
+            import fs from 'node:fs';
+            const rows = ['.', 'packages/workflow-t2i', 'packages/workflow-hires'].map((dir) => {
+              const p = JSON.parse(fs.readFileSync(dir + '/package.json', 'utf8'));
+              return dir + ' ' + p.name + ' ' + p.version;
+            });
+            console.log(rows.join('\n'));
+          " > pkgs.txt
+          while read -r dir name version; do
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version already published — skipping"
+            else
+              echo "publishing $name@$version with provenance"
+              (cd "$dir" && npm publish --provenance --access public)
+            fi
+          done < pkgs.txt

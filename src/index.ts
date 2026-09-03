@@ -45,3 +45,13 @@ export * from "./wfpack/index.js";
 
 // Recipes (composable workflow builders + transforms)
 export * as recipes from "./recipes/index.js";
+export {
+  hiresFix,
+  img2img,
+  inpaint,
+  outpaint,
+  textToImage,
+  upscale,
+  withControlNet,
+  withLora,
+} from "./recipes/index.js";
