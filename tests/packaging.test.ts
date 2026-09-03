@@ -27,12 +27,17 @@ describe("npm tarball consumer", () => {
     const tmp = mkdtempSync(join(tmpdir(), "cwf-tarball-"));
     // Drive npm through the running node binary: npm/pnpm may not be on
     // PATH in test envs (GUI-launched shells on Windows), and .cmd
-    // shims cannot be spawned directly. npm ships beside every node.
-    const npmCli = join(
-      process.execPath,
-      "..",
-      process.platform === "win32" ? "node_modules/npm/bin/npm-cli.js" : "../../lib/node_modules/npm/bin/npm-cli.js",
-    );
+    // shims cannot be spawned directly. Layouts differ: Windows installer,
+    // GitHub Actions toolcache, and unix prefix installs.
+    const nodeDir = join(process.execPath, "..");
+    const npmCliCandidates = [
+      join(nodeDir, "node_modules", "npm", "bin", "npm-cli.js"),
+      join(nodeDir, "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
+      join(nodeDir, "..", "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
+    ];
+    const npmCli = npmCliCandidates.find((p) => existsSync(p));
+    if (npmCli === undefined)
+      throw new Error(`Cannot locate npm-cli.js beside ${process.execPath}`);
     const npm = (args: string[], opts: { cwd: string }): string =>
       execFileSync(process.execPath, [npmCli, ...args], { ...opts, encoding: "utf8" });
     const tgz = npm(["pack", "--pack-destination", tmp], { cwd: root });
