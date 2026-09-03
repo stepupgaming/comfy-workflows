@@ -271,11 +271,14 @@ export function createClient(opts: ClientOptions): ComfyClient {
                 `Submit rejected: ${normalized.length} node error(s): ` +
                 normalized.map((e) => e.message).join("; "),
               // Structured, per-node: every child carries nodeId/input/
-              // hint extracted from the server payload.
+              // hint/got/expected extracted from the server payload.
               nodeErrors: normalized,
-              // Top-level convenience fields from the first node error.
+              // Top-level convenience fields mirror the FIRST child error,
+              // including got/expected when the server provided them.
               nodeId: first.nodeId,
               ...(first.input !== undefined ? { input: first.input } : {}),
+              ...(first.expected !== undefined ? { expected: first.expected } : {}),
+              ...(first.got !== undefined ? { got: first.got } : {}),
               ...(first.hint !== undefined ? { hint: first.hint } : {}),
               details: body,
             });
@@ -456,10 +459,15 @@ export function normalizeNodeErrors(body: Record<string, unknown>): ComfyError[]
         // Server validation messages often embed the actionable part; pull
         // well-known fields out of details when the server provides them.
         const detailsText = typeof entry["details"] === "string" ? entry["details"] : undefined;
-        // "value: 'bad.ckpt' (ckpt_name)" — the rejected value is parseable.
+        // "value: 'bad.ckpt'; expected: 'one of …'" — the rejected value and
+        // the expectation are parseable when the server embeds them.
         const gotMatch: string | undefined =
           detailsText !== undefined
-            ? (/value: '([^']*)'/.exec(detailsText)?.[1] ?? undefined)
+            ? (/\bvalue: '([^']*)'/.exec(detailsText)?.[1] ?? undefined)
+            : undefined;
+        const expectedMatch: string | undefined =
+          detailsText !== undefined
+            ? (/\bexpected: '([^']*)'/.exec(detailsText)?.[1] ?? undefined)
             : undefined;
         errors.push(
           new ComfyError({
@@ -470,6 +478,7 @@ export function normalizeNodeErrors(body: Record<string, unknown>): ComfyError[]
             nodeId,
             ...(inputName !== undefined ? { input: inputName } : {}),
             ...(gotMatch !== undefined ? { got: gotMatch } : {}),
+            ...(expectedMatch !== undefined ? { expected: expectedMatch } : {}),
             hint: detailsText !== undefined && detailsText !== "" ? detailsText : undefined,
             details: { serverError: entry, nodeError: nodeErrors[nodeId] },
           }),

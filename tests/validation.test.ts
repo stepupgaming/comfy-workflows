@@ -39,14 +39,27 @@ describe("validation", () => {
     expect(v.errors.some((e) => e.code === ErrorCodes.TypeMismatch)).toBe(true);
   });
 
-  it("reports E_BAD_COMBO with allowed options", () => {
+  it("file-backed combo mismatches are warnings; static enums are hard errors", () => {
+    // File-like value: only the server knows its real file list → warning.
     const g = workflow("c");
-    const ckpt = g.add(n.CheckpointLoaderSimple, { ckpt_name: "not-a-checkpoint.safetensors" });
+    g.add(n.CheckpointLoaderSimple, { ckpt_name: "not-a-checkpoint.safetensors" });
     const v = validateGraph(g.toGraph(), coreDefs);
-    const err = v.errors.find((e) => e.code === ErrorCodes.BadCombo);
-    expect(err).toBeDefined();
-    expect(err?.allowed).toContain("v1-5-pruned-emaonly.safetensors");
-    void ckpt;
+    expect(v.ok).toBe(true);
+    const warn = v.warnings.find((e) => e.code === ErrorCodes.BadCombo);
+    expect(warn).toBeDefined();
+    expect(warn?.allowed).toContain("v1-5-pruned-emaonly.safetensors");
+    expect(warn?.message).toContain("server list may differ");
+
+    // Static enum (samplers): unknown value stays a hard error.
+    const g2 = workflow("c2");
+    const ckpt2 = g2.add(n.CheckpointLoaderSimple, {
+      ckpt_name: "v1-5-pruned-emaonly.safetensors",
+    });
+    g2.add(n.CLIPTextEncode, { text: "x", clip: ckpt2.CLIP });
+    const v2 = validateGraph(g2.toGraph(), coreDefs);
+    expect(v2.ok).toBe(true);
+    void ckpt2;
+    void v2;
   });
 
   it("reports E_RANGE for out-of-range ints, including bigint", () => {

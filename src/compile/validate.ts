@@ -115,7 +115,7 @@ export function validateGraph(g: Graph, defs?: NodeDefs): ValidationResult {
 
 /** File-backed combo values (models, images) vary per server — only the server can verify them. */
 function isFileLike(value: string): boolean {
-  return /\.[A-Za-z0-9]{1,8}$/.test(value) || value.includes("/") || value.includes("\\");
+  return /\.[A-Za-z0-9]+$/.test(value) || value.includes("/") || value.includes("\\");
 }
 
 function validateAgainstDef(

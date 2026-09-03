@@ -434,7 +434,7 @@ describe("runtime client", () => {
                   {
                     type: "value_not_in_list",
                     message: "Value not in list",
-                    details: "value: 'bad.ckpt' (ckpt_name)",
+                    details: "value: 'bad.ckpt'; expected: 'model list member' (ckpt_name)",
                     extra_info: { input_name: "ckpt_name" },
                   },
                 ],
@@ -463,7 +463,13 @@ describe("runtime client", () => {
     expect(ne?.nodeId).toBe("n1");
     expect(ne?.input).toBe("ckpt_name");
     expect(ne?.got).toBe("bad.ckpt");
+    expect(ne?.expected).toBe("model list member");
     expect(ne?.hint).toContain("bad.ckpt");
+    // Top-level convenience fields MIRROR the first child, including got/expected.
+    expect(caught?.nodeId).toBe("n1");
+    expect(caught?.input).toBe("ckpt_name");
+    expect(caught?.got).toBe("bad.ckpt");
+    expect(caught?.expected).toBe("model list member");
     expect(calls).toBe(1); // submit attempted exactly once, then structured failure
   });
 

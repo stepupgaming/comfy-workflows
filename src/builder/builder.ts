@@ -82,7 +82,7 @@ export class GraphBuilder {
   rawNode(
     classType: string,
     values: Record<string, unknown>,
-    opts: { outputs?: OutputEntry[]; title?: string; id?: NodeId } = {},
+    opts: { outputs?: OutputEntry[]; title?: string; id?: NodeId; mode?: NodeMode } = {},
   ): RawHandle {
     const id = irAddNode(this.graph, {
       type: classType,
@@ -91,6 +91,7 @@ export class GraphBuilder {
       outputNames: opts.outputs?.map((o) => o.name).filter((n): n is string => n !== undefined),
       title: opts.title,
       id: opts.id,
+      mode: opts.mode,
     });
     applyParams(this.graph, id, values);
     return makeRawHandle(id, opts.outputs ?? []);
