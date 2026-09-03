@@ -71,7 +71,7 @@ jobs:
             if npm view "$name@$version" version >/dev/null 2>&1; then
               echo "$name@$version already published — skipping"
             else
-              echo "publishing $name@$version with provenance"
-              (cd "$dir" && npm publish --provenance --access public)
+              echo "publishing $name@$version with provenance (OIDC)"
+              (cd "$dir" && npm publish --auth-type=oidc --provenance --access public)
             fi
           done < pkgs.txt
