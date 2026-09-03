@@ -68,7 +68,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "build:packages": "jiti scripts/build-workflow-packages.mjs && pnpm -r --filter ./packages/* exec tsc -p tsconfig.json",
+    "build:packages": "jiti scripts/build-workflow-packages.mjs && pnpm --filter \"./packages/**\" exec tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
