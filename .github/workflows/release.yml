@@ -33,8 +33,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          # Do NOT set registry-url. setup-node would inject a dummy
-          # NODE_AUTH_TOKEN that overrides OIDC and 404s trusted publishing.
+          registry-url: "https://registry.npmjs.org"
       # npm trusted publishing + provenance need npm >= 11.5.1.
       - run: npm install -g npm@latest
       - run: pnpm install --frozen-lockfile
@@ -52,6 +51,10 @@ jobs:
       - run: node --import jiti/register src/cli/bin.ts pack packages/workflow-t2i
       - run: node --import jiti/register src/cli/bin.ts pack packages/workflow-hires
       - name: Publish core + workflow packages (skip versions already on the registry)
+        env:
+          # setup-node writes a dummy NODE_AUTH_TOKEN when registry-url is set.
+          # That token 404s trusted publishing. Unset it so npm uses OIDC.
+          NODE_AUTH_TOKEN: ""
         run: |
           node --input-type=module -e "
             import fs from 'node:fs';
