@@ -181,6 +181,77 @@ describe("npm tarball consumer", () => {
   }, 180_000);
 });
 
+describe("npm@latest packed CLI shims", () => {
+  it("installs node_modules/.bin/cwf and comfy-workflows from the packed tarball", () => {
+    const root = join(__dirname, "..");
+    expect(existsSync(join(root, "dist", "index.js"))).toBe(true);
+
+    const pj = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
+      bin: Record<string, string>;
+    };
+    expect(pj.bin["cwf"]).toBe("dist/cli/bin.js");
+    expect(pj.bin["comfy-workflows"]).toBe("dist/cli/bin.js");
+
+    const nodeDir = join(process.execPath, "..");
+    const npmCliCandidates = [
+      join(nodeDir, "node_modules", "npm", "bin", "npm-cli.js"),
+      join(nodeDir, "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
+      join(nodeDir, "..", "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
+    ];
+    const npmCli = npmCliCandidates.find((p) => existsSync(p));
+    if (npmCli === undefined)
+      throw new Error(`Cannot locate npm-cli.js beside ${process.execPath}`);
+
+    const tmp = mkdtempSync(join(tmpdir(), "cwf-npm-latest-pack-"));
+    // Pack with npm@latest — that is the publisher that previously dropped
+    // `./dist/cli/bin.js` bin entries on Windows.
+    const packOut = execFileSync(
+      process.execPath,
+      [npmCli, "exec", "--yes", "npm@latest", "--", "pack", "--pack-destination", tmp],
+      { cwd: root, encoding: "utf8" },
+    );
+    const tgzBase = packOut.trim().split("\n").pop()!.trim();
+    const tgzPath = join(tmp, tgzBase.split(/[\\/]/).pop()!);
+
+    const consumer = mkdtempSync(join(tmpdir(), "cwf-npm-latest-consumer-"));
+    writeFileSync(
+      join(consumer, "package.json"),
+      JSON.stringify({ name: "cwf-shim-test", type: "module" }),
+    );
+    execFileSync(
+      process.execPath,
+      [npmCli, "exec", "--yes", "npm@latest", "--", "install", tgzPath],
+      { cwd: consumer, stdio: "pipe" },
+    );
+
+    const binDir = join(consumer, "node_modules", ".bin");
+    const cwfUnix = join(binDir, "cwf");
+    const workflowsUnix = join(binDir, "comfy-workflows");
+    expect(existsSync(cwfUnix)).toBe(true);
+    expect(existsSync(workflowsUnix)).toBe(true);
+
+    const runHelp = (name: string): string => {
+      if (process.platform === "win32") {
+        const cmd = join(binDir, `${name}.cmd`);
+        expect(existsSync(cmd)).toBe(true);
+        return execFileSync("cmd.exe", ["/c", cmd, "--help"], {
+          cwd: consumer,
+          encoding: "utf8",
+        });
+      }
+      return execFileSync(join(binDir, name), ["--help"], {
+        cwd: consumer,
+        encoding: "utf8",
+      });
+    };
+    const cwfHelp = runHelp("cwf");
+    const aliasHelp = runHelp("comfy-workflows");
+    expect(cwfHelp).toContain("cwf — code-first, typed, composable workflows for ComfyUI");
+    expect(cwfHelp).toContain("cwf init");
+    expect(aliasHelp).toContain("cwf — code-first, typed, composable workflows for ComfyUI");
+  }, 180_000);
+});
+
 describe("no stale comfy-sdk imports", () => {
   it("source, examples, packages, and tests use the new specifiers", () => {
     const roots = ["src", "examples", "packages", "tests", "scripts"].map((d) =>

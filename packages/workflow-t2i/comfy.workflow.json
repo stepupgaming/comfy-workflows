@@ -63,7 +63,7 @@
       }
     ]
   },
-  "coreVersion": "^0.1.0",
+  "coreVersion": "^0.2.0",
   "compatibility": {
     "notes": "Needs any SD1.x/SDXL-compatible checkpoint on the server, passed as the checkpoint parameter."
   }

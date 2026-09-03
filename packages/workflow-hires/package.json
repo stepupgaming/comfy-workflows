@@ -1,6 +1,6 @@
 {
   "name": "@stepupgaming/comfy-workflow-hires",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "High-resolution text-to-image Comfy workflow package (t2i base + latent hires-fix second pass).",
   "type": "module",
   "license": "MIT",
@@ -36,7 +36,7 @@
     "directory": "packages/workflow-hires"
   },
   "peerDependencies": {
-    "@stepupgaming/comfy-workflows": "^0.1.0"
+    "@stepupgaming/comfy-workflows": "^0.2.0"
   },
   "devDependencies": {
     "@stepupgaming/comfy-workflows": "workspace:*",

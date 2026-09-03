@@ -114,7 +114,7 @@ If you prefer to author in TypeScript from scratch:
 cwf pack ./my-package
 ```
 
-`pack` checks package metadata, manifest schema, entry resolution, IR parsing, parameter/output coherence, node-class agreement (missing *or stale* entries fail), embedded machine-local paths, and the no-JS-execution property. It exits non-zero on any error and supports `--json` for CI. Absolute paths fail with `E_PACK_LOCAL_PATH` and a suggested `cwf expose … --required`.
+`pack` checks package metadata, manifest schema, entry resolution, IR parsing, parameter/output coherence, node-class agreement (missing _or stale_ entries fail), embedded machine-local paths, and the no-JS-execution property. It exits non-zero on any error and supports `--json` for CI. Absolute paths fail with `E_PACK_LOCAL_PATH` and a suggested `cwf expose … --required`.
 
 5. Publish to npm normally. If the wrapper imports core APIs, declare a `peerDependency` on `@stepupgaming/comfy-workflows` — parsing the manifest/IR itself must never require the SDK.
 
@@ -122,9 +122,13 @@ See the [manifest reference](/reference/workflow-manifest) for the full `comfy.w
 
 ## First-party packages
 
-| Package | Workflow | Nodes |
-| ------- | -------- | ----- |
-| `@stepupgaming/comfy-workflow-t2i` | Baseline text-to-image: checkpoint → encodes → KSampler → decode → save | Checkpoint, CLIP, sampler, latent, VAE, save |
-| `@stepupgaming/comfy-workflow-hires` | T2I composed with a latent hires-fix second pass at build time | T2I set plus latent upscale and second sampler |
+| Package                              | Workflow                                                                | Nodes                                          |
+| ------------------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------- |
+| `@stepupgaming/comfy-workflow-t2i`   | Baseline text-to-image: checkpoint → encodes → KSampler → decode → save | Checkpoint, CLIP, sampler, latent, VAE, save   |
+| `@stepupgaming/comfy-workflow-hires` | T2I composed with a latent hires-fix second pass at build time          | T2I set plus latent upscale and second sampler |
 
 Both pass `cwf pack`, install cleanly from their tarballs, and compile deterministically. Actual image generation needs a checkpoint on the server (passed as the `checkpoint` parameter); where no compatible checkpoint exists, compilation plus compatibility inspection are the acceptance bar.
+
+## Core compatibility
+
+During 0.x, a workflow package declares `peerDependencies["@stepupgaming/comfy-workflows"]` and `comfy.workflow.json` `coreVersion` as `^0.<minor>.0` of the core it was built against. `^0.2.0` accepts 0.2.1 and rejects 0.3.0. First-party packages follow the same range. `cwf init` / `generatePackage()` derive that range from the running core's `package.json` — they do not hard-code a version. From 1.x the range is `^<major>.0.0`.

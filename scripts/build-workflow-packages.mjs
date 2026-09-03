@@ -64,7 +64,9 @@ for (const dir of PACKAGES) {
       nodePacks: [],
       models: built.manifestMeta.models,
     },
-    coreVersion: "^0.1.0",
+    coreVersion: core.corePeerRange(
+      JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")).version,
+    ),
     compatibility: built.manifestMeta.compatibility,
   };
 

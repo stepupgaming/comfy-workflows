@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { cloneGraph } from "../ir/graph.js";
 import { serializeGraph } from "../ir/serialize.js";
 import { emitTs } from "../emit-ts/emit.js";
@@ -13,6 +16,51 @@ import { deriveNodeClasses } from "./discover.js";
 import { analyzePortability, type PortabilityFinding } from "./portability.js";
 import { suggestParams, type SuggestedParam } from "./suggest.js";
 import { ComfyError, ErrorCodes } from "../errors.js";
+
+/**
+ * Compatibility policy (0.x): a workflow package declares
+ * `^0.<minor>.0` of the core it was built against. `^0.2.0` accepts
+ * 0.2.1 but not 0.3.0. From 1.x onward the range is `^<major>.0.0`.
+ */
+export function corePeerRange(coreVersion: string): string {
+  const m = /^(\d+)\.(\d+)\.\d+/.exec(coreVersion.trim());
+  if (!m) {
+    throw new ComfyError({
+      code: ErrorCodes.InvalidGraph,
+      message: `Cannot derive a peer range from core version "${coreVersion}"`,
+      hint: "Pass a semver string like 0.2.1, or omit coreVersion to read this package's version.",
+    });
+  }
+  const major = Number(m[1]);
+  const minor = Number(m[2]);
+  return major === 0 ? `^0.${minor}.0` : `^${major}.0.0`;
+}
+
+/** Version of the installed/published core package this module ships in. */
+export function readCorePackageVersion(): string {
+  let dir = dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 8; i++) {
+    const file = join(dir, "package.json");
+    if (existsSync(file)) {
+      try {
+        const json = JSON.parse(readFileSync(file, "utf8")) as { name?: string; version?: string };
+        if (json.name === "@stepupgaming/comfy-workflows" && typeof json.version === "string") {
+          return json.version;
+        }
+      } catch {
+        /* keep walking */
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new ComfyError({
+    code: ErrorCodes.InvalidGraph,
+    message: "Cannot read @stepupgaming/comfy-workflows version from package.json",
+    hint: "Pass coreVersion explicitly to generatePackage().",
+  });
+}
 
 export interface PackageNameParts {
   /** npm package name as it will appear in package.json (scoped or unscoped). */
@@ -103,7 +151,11 @@ export interface InitPackageOptions {
   defs?: NodeDefs;
   /** Optional description; otherwise a placeholder. */
   description?: string;
-  /** Core package version range for peerDependency / coreVersion. */
+  /**
+   * Semver range for peerDependency / manifest coreVersion.
+   * Omit to derive `corePeerRange(readCorePackageVersion())` from this
+   * package — never a hardcoded fallback.
+   */
   coreVersion?: string;
 }
 
@@ -290,7 +342,8 @@ export function generatePackage(opts: InitPackageOptions): InitPackageResult {
   const built = { ...opts, graph };
   const manifest = buildManifest(built);
   const nodeClasses = deriveNodeClasses(graph);
-  const coreVersion = opts.coreVersion ?? "^0.1.0";
+  const coreVersion = opts.coreVersion ?? corePeerRange(readCorePackageVersion());
+  manifest.coreVersion = coreVersion;
   const packageJson: Record<string, unknown> = {
     name: opts.name.npmName,
     version: "0.1.0",

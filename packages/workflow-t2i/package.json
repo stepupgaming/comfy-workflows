@@ -1,6 +1,6 @@
 {
   "name": "@stepupgaming/comfy-workflow-t2i",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Text-to-image Comfy workflow package (checkpoint → prompts → KSampler → decode → save).",
   "type": "module",
   "license": "MIT",
@@ -35,7 +35,7 @@
     "directory": "packages/workflow-t2i"
   },
   "peerDependencies": {
-    "@stepupgaming/comfy-workflows": "^0.1.0"
+    "@stepupgaming/comfy-workflows": "^0.2.0"
   },
   "devDependencies": {
     "@stepupgaming/comfy-workflows": "workspace:*",

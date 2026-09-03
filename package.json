@@ -1,6 +1,6 @@
 {
   "name": "@stepupgaming/comfy-workflows",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Comfy Workflows — code-first, typed, composable workflows for ComfyUI.",
   "type": "module",
   "license": "MIT",
@@ -39,8 +39,8 @@
     }
   },
   "bin": {
-    "comfy-workflows": "./dist/cli/bin.js",
-    "cwf": "./dist/cli/bin.js"
+    "comfy-workflows": "dist/cli/bin.js",
+    "cwf": "dist/cli/bin.js"
   },
   "files": [
     "dist",

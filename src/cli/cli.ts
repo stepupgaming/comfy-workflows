@@ -800,7 +800,6 @@ async function cmdInit(
     name,
     graph,
     defs,
-    coreVersion: `^${await readCoreVersion()}`,
   });
   await mkdir(dest, { recursive: true });
   for (const [rel, content] of Object.entries(generated.files)) {
@@ -865,17 +864,6 @@ async function cmdInit(
   }
   process.stdout.write(lines.join("\n") + "\n");
   return 0;
-}
-
-async function readCoreVersion(): Promise<string> {
-  try {
-    const json = JSON.parse(await readFile(path.join(PKG_ROOT, "package.json"), "utf8")) as {
-      version?: string;
-    };
-    return json.version ?? "0.1.0";
-  } catch {
-    return "0.1.0";
-  }
 }
 
 async function cmdExpose(

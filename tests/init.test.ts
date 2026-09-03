@@ -11,6 +11,7 @@ import { parseJsonLossless } from "../src/lossless-parse.js";
 import {
   analyzePortability,
   checkPackageCoherence,
+  corePeerRange,
   deriveNodeClasses,
   exposeParam,
   generatePackage,
@@ -503,7 +504,21 @@ describe("library generatePackage / exposeParam", () => {
     const pj = JSON.parse(result.files["package.json"]) as {
       peerDependencies?: Record<string, string>;
     };
-    expect(pj.peerDependencies?.["@stepupgaming/comfy-workflows"]).toBeDefined();
+    const core = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as {
+      version: string;
+    };
+    const [maj, min] = core.version.split(".");
+    const expected = Number(maj) === 0 ? `^0.${min}.0` : `^${maj}.0.0`;
+    expect(pj.peerDependencies?.["@stepupgaming/comfy-workflows"]).toBe(expected);
+    expect(expected).not.toBe("^0.1.0");
+    const man = JSON.parse(result.files["comfy.workflow.json"]) as { coreVersion?: string };
+    expect(man.coreVersion).toBe(expected);
+  });
+
+  it("corePeerRange follows the 0.x minor policy", () => {
+    expect(corePeerRange("0.2.1")).toBe("^0.2.0");
+    expect(corePeerRange("0.3.0")).toBe("^0.3.0");
+    expect(corePeerRange("1.2.3")).toBe("^1.0.0");
   });
 
   it("exposeParam is pure", () => {

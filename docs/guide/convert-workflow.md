@@ -50,7 +50,7 @@ Comfy Workflows will not put you in `@stepupgaming` unless you type that scope y
 
 ## 3. Read the generated files
 
-- **package.json** — name `0.1.0`, MIT scaffolding license, keywords, `comfyWorkflow` pointer. Change the license if the source workflow is not yours to relicense.
+- **package.json** — version `0.1.0`, MIT scaffolding license, keywords, `comfyWorkflow` pointer. Change the license if the source workflow is not yours to relicense.
 - **comfy.workflow.json** — identity, parameters, outputs, required node classes (derived from the IR).
 - **workflow.ir.json** — Graph IR. Node ids, titles, modes, and lossless integers from the source are preserved.
 - **workflow.ts** — typed authoring file. Custom nodes the bundled registry does not know become `rawNode(...)`.

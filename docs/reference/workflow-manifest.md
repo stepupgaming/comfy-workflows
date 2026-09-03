@@ -22,7 +22,13 @@ A minimal manifest:
   },
   "outputs": [{ "name": "image", "type": "IMAGE" }],
   "requires": {
-    "nodeClasses": ["CheckpointLoaderSimple", "CLIPTextEncode", "KSampler", "VAEDecode", "SaveImage"],
+    "nodeClasses": [
+      "CheckpointLoaderSimple",
+      "CLIPTextEncode",
+      "KSampler",
+      "VAEDecode",
+      "SaveImage"
+    ],
     "nodePacks": [],
     "models": []
   }
@@ -40,10 +46,10 @@ The machine-readable [JSON Schema](https://github.com/stepupgaming/comfy-workflo
 - **`description`** (string) — what the workflow does.
 - **`parameters`** (object, required) — template parameters keyed by name. Each entry: `type` (`int`/`float`/`string`/`boolean`/`combo`; `"integer"` is accepted as an alias of `"int"`), `required` (boolean), plus optional `default` (JSON scalar), `options`, and `description`. Must cohere with the IR template's declared params: every manifest entry must exist in the IR and vice versa; a manifest-required param must have no default anywhere.
 - **`outputs`** (array, required) — declared graph outputs as `{ name, type }` pairs (e.g. `{ "name": "image", "type": "IMAGE" }`). Every manifest entry must match a graph output decl and vice versa.
-- **`requires.nodeClasses`** (string[], required) — required Comfy node class names. Explicit in the manifest or deterministically derivable from the IR — `cwf pack` fails when the manifest omits a used class *or* lists one the IR doesn't use.
+- **`requires.nodeClasses`** (string[], required) — required Comfy node class names. Explicit in the manifest or deterministically derivable from the IR — `cwf pack` fails when the manifest omits a used class _or_ lists one the IR doesn't use.
 - **`requires.nodePacks`** (string[]) — node-pack names when known. Informational in v1; empty triggers a `pack` warning, not an error.
 - **`requires.models`** (array) — model/checkpoint requirements as `{ kind, name, optional? }` when known. Metadata and compatibility reporting only in v1 — there is no model downloader.
-- **`coreVersion`** (string) — minimum core package version (semver range) the package was built against.
+- **`coreVersion`** (string) — semver range of `@stepupgaming/comfy-workflows` the package was built against. During 0.x this is `^0.<minor>.0` (so `^0.2.0` matches 0.2.1, not 0.3.0). From 1.x it is `^<major>.0.0`.
 - **`compatibility`** (object) — `minComfyUIVersion`, free-form `notes`.
 
 ## Dependency semantics
