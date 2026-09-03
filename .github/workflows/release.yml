@@ -37,7 +37,12 @@ jobs:
       # npm trusted publishing + provenance need npm >= 11.5.1.
       - run: npm install -g npm@latest
       - run: pnpm install --frozen-lockfile
-      - run: git status --porcelain --exit-code # never publish from a dirty tree
+      - name: Never publish from a dirty tree
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            exit 1
+          fi
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
