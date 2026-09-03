@@ -1,692 +1,692 @@
 {
-  "nodes": [
+  "nodes":[
     {
-      "classType": "CLIPSetLastLayer",
-      "displayName": "CLIP Set Last Layer",
-      "category": "conditioning",
-      "inputs": [
+      "classType":"CLIPSetLastLayer",
+      "displayName":"CLIP Set Last Layer",
+      "category":"conditioning",
+      "inputs":[
         {
-          "name": "stop_at_clip_layer",
-          "kind": "int"
+          "name":"stop_at_clip_layer",
+          "kind":"int"
         },
         {
-          "name": "clip",
-          "kind": "connection",
-          "type": "CLIP"
+          "name":"clip",
+          "kind":"connection",
+          "type":"CLIP"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "CLIP"
+          "type":"CLIP"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "CLIPTextEncode",
-      "displayName": "CLIP Text Encode (Prompt)",
-      "category": "conditioning",
-      "inputs": [
+      "classType":"CLIPTextEncode",
+      "displayName":"CLIP Text Encode (Prompt)",
+      "category":"conditioning",
+      "inputs":[
         {
-          "name": "text",
-          "kind": "string"
+          "name":"text",
+          "kind":"string"
         },
         {
-          "name": "clip",
-          "kind": "connection",
-          "type": "CLIP"
+          "name":"clip",
+          "kind":"connection",
+          "type":"CLIP"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "CONDITIONING"
+          "type":"CONDITIONING"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "CheckpointLoaderSimple",
-      "displayName": "Load Checkpoint",
-      "category": "loaders",
-      "inputs": [
+      "classType":"CheckpointLoaderSimple",
+      "displayName":"Load Checkpoint",
+      "category":"loaders",
+      "inputs":[
         {
-          "name": "ckpt_name",
-          "kind": "combo"
+          "name":"ckpt_name",
+          "kind":"combo"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "MODEL"
+          "type":"MODEL"
         },
         {
-          "type": "CLIP"
+          "type":"CLIP"
         },
         {
-          "type": "VAE"
+          "type":"VAE"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "ControlNetApplyAdvanced",
-      "displayName": "Apply ControlNet (Advanced)",
-      "category": "conditioning/controlnet",
-      "inputs": [
+      "classType":"ControlNetApplyAdvanced",
+      "displayName":"Apply ControlNet (Advanced)",
+      "category":"conditioning/controlnet",
+      "inputs":[
         {
-          "name": "positive",
-          "kind": "connection",
-          "type": "CONDITIONING"
+          "name":"positive",
+          "kind":"connection",
+          "type":"CONDITIONING"
         },
         {
-          "name": "negative",
-          "kind": "connection",
-          "type": "CONDITIONING"
+          "name":"negative",
+          "kind":"connection",
+          "type":"CONDITIONING"
         },
         {
-          "name": "control_net",
-          "kind": "connection",
-          "type": "CONTROL_NET"
+          "name":"control_net",
+          "kind":"connection",
+          "type":"CONTROL_NET"
         },
         {
-          "name": "image",
-          "kind": "connection",
-          "type": "IMAGE"
+          "name":"image",
+          "kind":"connection",
+          "type":"IMAGE"
         },
         {
-          "name": "strength",
-          "kind": "float"
+          "name":"strength",
+          "kind":"float"
         },
         {
-          "name": "start_percent",
-          "kind": "float"
+          "name":"start_percent",
+          "kind":"float"
         },
         {
-          "name": "end_percent",
-          "kind": "float"
+          "name":"end_percent",
+          "kind":"float"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "CONDITIONING",
-          "name": "positive"
+          "type":"CONDITIONING",
+          "name":"positive"
         },
         {
-          "type": "CONDITIONING",
-          "name": "negative"
+          "type":"CONDITIONING",
+          "name":"negative"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "ControlNetLoader",
-      "displayName": "Load ControlNet Model",
-      "category": "loaders",
-      "inputs": [
+      "classType":"ControlNetLoader",
+      "displayName":"Load ControlNet Model",
+      "category":"loaders",
+      "inputs":[
         {
-          "name": "control_net_name",
-          "kind": "combo"
+          "name":"control_net_name",
+          "kind":"combo"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "CONTROL_NET"
+          "type":"CONTROL_NET"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "EmptyLatentImage",
-      "displayName": "Empty Latent Image",
-      "category": "latent",
-      "inputs": [
+      "classType":"EmptyLatentImage",
+      "displayName":"Empty Latent Image",
+      "category":"latent",
+      "inputs":[
         {
-          "name": "width",
-          "kind": "int"
+          "name":"width",
+          "kind":"int"
         },
         {
-          "name": "height",
-          "kind": "int"
+          "name":"height",
+          "kind":"int"
         },
         {
-          "name": "batch_size",
-          "kind": "int"
+          "name":"batch_size",
+          "kind":"int"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "LATENT"
+          "type":"LATENT"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "GrowMask",
-      "displayName": "Grow Mask",
-      "category": "mask",
-      "inputs": [
+      "classType":"GrowMask",
+      "displayName":"Grow Mask",
+      "category":"mask",
+      "inputs":[
         {
-          "name": "mask",
-          "kind": "connection",
-          "type": "MASK"
+          "name":"mask",
+          "kind":"connection",
+          "type":"MASK"
         },
         {
-          "name": "expand",
-          "kind": "int"
+          "name":"expand",
+          "kind":"int"
         },
         {
-          "name": "tapered_corners",
-          "kind": "boolean"
+          "name":"tapered_corners",
+          "kind":"boolean"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "MASK"
+          "type":"MASK"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "ImageScale",
-      "displayName": "Upscale Image",
-      "category": "image/upscaling",
-      "inputs": [
+      "classType":"ImageScale",
+      "displayName":"Upscale Image",
+      "category":"image/upscaling",
+      "inputs":[
         {
-          "name": "upscale_method",
-          "kind": "combo"
+          "name":"upscale_method",
+          "kind":"combo"
         },
         {
-          "name": "width",
-          "kind": "int"
+          "name":"width",
+          "kind":"int"
         },
         {
-          "name": "height",
-          "kind": "int"
+          "name":"height",
+          "kind":"int"
         },
         {
-          "name": "crop",
-          "kind": "combo"
+          "name":"crop",
+          "kind":"combo"
         },
         {
-          "name": "image",
-          "kind": "connection",
-          "type": "IMAGE"
+          "name":"image",
+          "kind":"connection",
+          "type":"IMAGE"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "IMAGE"
+          "type":"IMAGE"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "ImageUpscaleWithModel",
-      "displayName": "Upscale Image (using Model)",
-      "category": "image/upscaling",
-      "inputs": [
+      "classType":"ImageUpscaleWithModel",
+      "displayName":"Upscale Image (using Model)",
+      "category":"image/upscaling",
+      "inputs":[
         {
-          "name": "upscale_model",
-          "kind": "connection",
-          "type": "UPSCALE_MODEL"
+          "name":"upscale_model",
+          "kind":"connection",
+          "type":"UPSCALE_MODEL"
         },
         {
-          "name": "image",
-          "kind": "connection",
-          "type": "IMAGE"
+          "name":"image",
+          "kind":"connection",
+          "type":"IMAGE"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "IMAGE"
+          "type":"IMAGE"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "KSampler",
-      "displayName": "KSampler",
-      "category": "sampling",
-      "inputs": [
+      "classType":"KSampler",
+      "displayName":"KSampler",
+      "category":"sampling",
+      "inputs":[
         {
-          "name": "model",
-          "kind": "connection",
-          "type": "MODEL"
+          "name":"model",
+          "kind":"connection",
+          "type":"MODEL"
         },
         {
-          "name": "seed",
-          "kind": "int"
+          "name":"seed",
+          "kind":"int"
         },
         {
-          "name": "steps",
-          "kind": "int"
+          "name":"steps",
+          "kind":"int"
         },
         {
-          "name": "cfg",
-          "kind": "float"
+          "name":"cfg",
+          "kind":"float"
         },
         {
-          "name": "sampler_name",
-          "kind": "combo"
+          "name":"sampler_name",
+          "kind":"combo"
         },
         {
-          "name": "scheduler",
-          "kind": "combo"
+          "name":"scheduler",
+          "kind":"combo"
         },
         {
-          "name": "positive",
-          "kind": "connection",
-          "type": "CONDITIONING"
+          "name":"positive",
+          "kind":"connection",
+          "type":"CONDITIONING"
         },
         {
-          "name": "negative",
-          "kind": "connection",
-          "type": "CONDITIONING"
+          "name":"negative",
+          "kind":"connection",
+          "type":"CONDITIONING"
         },
         {
-          "name": "latent_image",
-          "kind": "connection",
-          "type": "LATENT"
+          "name":"latent_image",
+          "kind":"connection",
+          "type":"LATENT"
         },
         {
-          "name": "denoise",
-          "kind": "float"
+          "name":"denoise",
+          "kind":"float"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "LATENT"
+          "type":"LATENT"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "KSamplerAdvanced",
-      "displayName": "KSampler (Advanced)",
-      "category": "sampling",
-      "inputs": [
+      "classType":"KSamplerAdvanced",
+      "displayName":"KSampler (Advanced)",
+      "category":"sampling",
+      "inputs":[
         {
-          "name": "add_noise",
-          "kind": "combo"
+          "name":"add_noise",
+          "kind":"combo"
         },
         {
-          "name": "noise_seed",
-          "kind": "int"
+          "name":"noise_seed",
+          "kind":"int"
         },
         {
-          "name": "steps",
-          "kind": "int"
+          "name":"steps",
+          "kind":"int"
         },
         {
-          "name": "cfg",
-          "kind": "float"
+          "name":"cfg",
+          "kind":"float"
         },
         {
-          "name": "sampler_name",
-          "kind": "combo"
+          "name":"sampler_name",
+          "kind":"combo"
         },
         {
-          "name": "scheduler",
-          "kind": "combo"
+          "name":"scheduler",
+          "kind":"combo"
         },
         {
-          "name": "start_at_step",
-          "kind": "int"
+          "name":"start_at_step",
+          "kind":"int"
         },
         {
-          "name": "end_at_step",
-          "kind": "int"
+          "name":"end_at_step",
+          "kind":"int"
         },
         {
-          "name": "return_with_leftover_noise",
-          "kind": "combo"
+          "name":"return_with_leftover_noise",
+          "kind":"combo"
         },
         {
-          "name": "model",
-          "kind": "connection",
-          "type": "MODEL"
+          "name":"model",
+          "kind":"connection",
+          "type":"MODEL"
         },
         {
-          "name": "positive",
-          "kind": "connection",
-          "type": "CONDITIONING"
+          "name":"positive",
+          "kind":"connection",
+          "type":"CONDITIONING"
         },
         {
-          "name": "negative",
-          "kind": "connection",
-          "type": "CONDITIONING"
+          "name":"negative",
+          "kind":"connection",
+          "type":"CONDITIONING"
         },
         {
-          "name": "latent_image",
-          "kind": "connection",
-          "type": "LATENT"
+          "name":"latent_image",
+          "kind":"connection",
+          "type":"LATENT"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "LATENT"
+          "type":"LATENT"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "LatentUpscale",
-      "displayName": "Upscale Latent",
-      "category": "latent",
-      "inputs": [
+      "classType":"LatentUpscale",
+      "displayName":"Upscale Latent",
+      "category":"latent",
+      "inputs":[
         {
-          "name": "upscale_method",
-          "kind": "combo"
+          "name":"upscale_method",
+          "kind":"combo"
         },
         {
-          "name": "width",
-          "kind": "int"
+          "name":"width",
+          "kind":"int"
         },
         {
-          "name": "height",
-          "kind": "int"
+          "name":"height",
+          "kind":"int"
         },
         {
-          "name": "crop",
-          "kind": "combo"
+          "name":"crop",
+          "kind":"combo"
         },
         {
-          "name": "samples",
-          "kind": "connection",
-          "type": "LATENT"
+          "name":"samples",
+          "kind":"connection",
+          "type":"LATENT"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "LATENT"
+          "type":"LATENT"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "LatentUpscaleBy",
-      "displayName": "Upscale Latent By",
-      "category": "latent",
-      "inputs": [
+      "classType":"LatentUpscaleBy",
+      "displayName":"Upscale Latent By",
+      "category":"latent",
+      "inputs":[
         {
-          "name": "upscale_method",
-          "kind": "combo"
+          "name":"upscale_method",
+          "kind":"combo"
         },
         {
-          "name": "scale_by",
-          "kind": "float"
+          "name":"scale_by",
+          "kind":"float"
         },
         {
-          "name": "samples",
-          "kind": "connection",
-          "type": "LATENT"
+          "name":"samples",
+          "kind":"connection",
+          "type":"LATENT"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "LATENT"
+          "type":"LATENT"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "LoadImage",
-      "displayName": "Load Image",
-      "category": "image",
-      "inputs": [
+      "classType":"LoadImage",
+      "displayName":"Load Image",
+      "category":"image",
+      "inputs":[
         {
-          "name": "image",
-          "kind": "combo"
+          "name":"image",
+          "kind":"combo"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "IMAGE"
+          "type":"IMAGE"
         },
         {
-          "type": "MASK"
+          "type":"MASK"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "LoadImageMask",
-      "displayName": "Load Image (as Mask)",
-      "category": "mask",
-      "inputs": [
+      "classType":"LoadImageMask",
+      "displayName":"Load Image (as Mask)",
+      "category":"mask",
+      "inputs":[
         {
-          "name": "mask",
-          "kind": "combo"
+          "name":"mask",
+          "kind":"combo"
         },
         {
-          "name": "channel",
-          "kind": "combo"
+          "name":"channel",
+          "kind":"combo"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "MASK"
+          "type":"MASK"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "LoraLoader",
-      "displayName": "Load LoRA",
-      "category": "loaders",
-      "inputs": [
+      "classType":"LoraLoader",
+      "displayName":"Load LoRA",
+      "category":"loaders",
+      "inputs":[
         {
-          "name": "model",
-          "kind": "connection",
-          "type": "MODEL"
+          "name":"model",
+          "kind":"connection",
+          "type":"MODEL"
         },
         {
-          "name": "clip",
-          "kind": "connection",
-          "type": "CLIP"
+          "name":"clip",
+          "kind":"connection",
+          "type":"CLIP"
         },
         {
-          "name": "lora_name",
-          "kind": "combo"
+          "name":"lora_name",
+          "kind":"combo"
         },
         {
-          "name": "strength_model",
-          "kind": "float"
+          "name":"strength_model",
+          "kind":"float"
         },
         {
-          "name": "strength_clip",
-          "kind": "float"
+          "name":"strength_clip",
+          "kind":"float"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "MODEL"
+          "type":"MODEL"
         },
         {
-          "type": "CLIP"
+          "type":"CLIP"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "Note",
-      "displayName": "Note",
-      "category": "utils",
-      "inputs": [
+      "classType":"Note",
+      "displayName":"Note",
+      "category":"utils",
+      "inputs":[
         {
-          "name": "text",
-          "kind": "string"
+          "name":"text",
+          "kind":"string"
         }
       ],
-      "outputs": [],
-      "outputNode": false
+      "outputs":[],
+      "outputNode":false
     },
     {
-      "classType": "PadImageForOutpainting",
-      "displayName": "Pad Image for Outpainting",
-      "category": "image/inpaint",
-      "inputs": [
+      "classType":"PadImageForOutpainting",
+      "displayName":"Pad Image for Outpainting",
+      "category":"image/inpaint",
+      "inputs":[
         {
-          "name": "image",
-          "kind": "connection",
-          "type": "IMAGE"
+          "name":"image",
+          "kind":"connection",
+          "type":"IMAGE"
         },
         {
-          "name": "left",
-          "kind": "int"
+          "name":"left",
+          "kind":"int"
         },
         {
-          "name": "top",
-          "kind": "int"
+          "name":"top",
+          "kind":"int"
         },
         {
-          "name": "right",
-          "kind": "int"
+          "name":"right",
+          "kind":"int"
         },
         {
-          "name": "bottom",
-          "kind": "int"
+          "name":"bottom",
+          "kind":"int"
         },
         {
-          "name": "feathering",
-          "kind": "int"
+          "name":"feathering",
+          "kind":"int"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "IMAGE"
+          "type":"IMAGE"
         },
         {
-          "type": "MASK"
+          "type":"MASK"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "PreviewImage",
-      "displayName": "Preview Image",
-      "category": "image",
-      "inputs": [
+      "classType":"PreviewImage",
+      "displayName":"Preview Image",
+      "category":"image",
+      "inputs":[
         {
-          "name": "images",
-          "kind": "connection",
-          "type": "IMAGE"
+          "name":"images",
+          "kind":"connection",
+          "type":"IMAGE"
         }
       ],
-      "outputs": [],
-      "outputNode": true
+      "outputs":[],
+      "outputNode":true
     },
     {
-      "classType": "SaveImage",
-      "displayName": "Save Image",
-      "category": "image",
-      "inputs": [
+      "classType":"SaveImage",
+      "displayName":"Save Image",
+      "category":"image",
+      "inputs":[
         {
-          "name": "images",
-          "kind": "connection",
-          "type": "IMAGE"
+          "name":"images",
+          "kind":"connection",
+          "type":"IMAGE"
         },
         {
-          "name": "filename_prefix",
-          "kind": "string"
+          "name":"filename_prefix",
+          "kind":"string"
         }
       ],
-      "outputs": [],
-      "outputNode": true
+      "outputs":[],
+      "outputNode":true
     },
     {
-      "classType": "UpscaleModelLoader",
-      "displayName": "Load Upscale Model",
-      "category": "loaders",
-      "inputs": [
+      "classType":"UpscaleModelLoader",
+      "displayName":"Load Upscale Model",
+      "category":"loaders",
+      "inputs":[
         {
-          "name": "model_name",
-          "kind": "combo"
+          "name":"model_name",
+          "kind":"combo"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "UPSCALE_MODEL"
+          "type":"UPSCALE_MODEL"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "VAEDecode",
-      "displayName": "VAE Decode",
-      "category": "latent",
-      "inputs": [
+      "classType":"VAEDecode",
+      "displayName":"VAE Decode",
+      "category":"latent",
+      "inputs":[
         {
-          "name": "samples",
-          "kind": "connection",
-          "type": "LATENT"
+          "name":"samples",
+          "kind":"connection",
+          "type":"LATENT"
         },
         {
-          "name": "vae",
-          "kind": "connection",
-          "type": "VAE"
+          "name":"vae",
+          "kind":"connection",
+          "type":"VAE"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "IMAGE"
+          "type":"IMAGE"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "VAEEncode",
-      "displayName": "VAE Encode",
-      "category": "latent",
-      "inputs": [
+      "classType":"VAEEncode",
+      "displayName":"VAE Encode",
+      "category":"latent",
+      "inputs":[
         {
-          "name": "pixels",
-          "kind": "connection",
-          "type": "IMAGE"
+          "name":"pixels",
+          "kind":"connection",
+          "type":"IMAGE"
         },
         {
-          "name": "vae",
-          "kind": "connection",
-          "type": "VAE"
+          "name":"vae",
+          "kind":"connection",
+          "type":"VAE"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "LATENT"
+          "type":"LATENT"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     },
     {
-      "classType": "VAEEncodeForInpaint",
-      "displayName": "VAE Encode (for Inpainting)",
-      "category": "latent/inpaint",
-      "inputs": [
+      "classType":"VAEEncodeForInpaint",
+      "displayName":"VAE Encode (for Inpainting)",
+      "category":"latent/inpaint",
+      "inputs":[
         {
-          "name": "pixels",
-          "kind": "connection",
-          "type": "IMAGE"
+          "name":"pixels",
+          "kind":"connection",
+          "type":"IMAGE"
         },
         {
-          "name": "vae",
-          "kind": "connection",
-          "type": "VAE"
+          "name":"vae",
+          "kind":"connection",
+          "type":"VAE"
         },
         {
-          "name": "mask",
-          "kind": "connection",
-          "type": "MASK"
+          "name":"mask",
+          "kind":"connection",
+          "type":"MASK"
         },
         {
-          "name": "grow_mask_by",
-          "kind": "int"
+          "name":"grow_mask_by",
+          "kind":"int"
         }
       ],
-      "outputs": [
+      "outputs":[
         {
-          "type": "LATENT"
+          "type":"LATENT"
         }
       ],
-      "outputNode": false
+      "outputNode":false
     }
   ]
 }
