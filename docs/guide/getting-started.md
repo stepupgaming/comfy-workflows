@@ -73,9 +73,21 @@ cwf run workflows/t2i/workflow.ts --url http://127.0.0.1:8188 --out out/ --param
 
 Prefer starting from a published workflow? Install one and skip authoring entirely: [Workflow packages](./packages).
 
+## Package an existing workflow
+
+If you already have a working `workflow.json`, skip the builder and turn it into a publishable package:
+
+```bash
+cwf init my-workflow --from existing-workflow.json
+cd my-workflow
+cwf pack
+```
+
+Editor v0.4, workflow v1, and API/prompt JSON are detected automatically. The full lifecycle — portability warnings, `cwf expose`, inspect, run, publish — is in [Convert a ComfyUI workflow into a package](./convert-workflow).
+
 ## Importing existing workflows
 
-Existing graphs enter the same pipeline. All three editor/runtime formats are detected automatically:
+To edit as TypeScript without packaging:
 
 ```bash
 cwf import existing-workflow.json --ts workflows/foo/workflow.ts
@@ -88,6 +100,7 @@ cwf import existing-workflow.json --ts workflows/foo/workflow.ts
 
 ## Where to go next
 
+- [Convert a ComfyUI workflow into a package](./convert-workflow) — `cwf init` → pack → publish
 - [Authoring workflows](./authoring) — builder API, escape hatches, templates
 - [Workflow packages](./packages) — install, inspect, run, author
 - [Recipes](/reference/recipes) — `textToImage`, `hiresFix`, and friends

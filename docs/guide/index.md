@@ -37,7 +37,7 @@ Comfy JSON ──cwf import──▶ Graph IR ──author/compose──▶ IR �
                               │ workflow packages (npm: manifest + IR)
 ```
 
-- **Import**: `cwf import existing.json --ts workflows/foo/workflow.ts` turns editor/API JSON into IR plus editable TypeScript. See [Getting started](./getting-started#importing-existing-workflows).
+- **Import**: `cwf import existing.json --ts workflows/foo/workflow.ts` turns editor/API JSON into IR plus editable TypeScript. Or skip IR entirely and run `cwf init my-workflow --from existing.json` — see [Convert a workflow](./convert-workflow).
 - **Author**: build graphs with the typed SDK or one-call [recipes](/reference/recipes). See [Authoring workflows](./authoring).
 - **Share**: publish the IR plus a manifest as an npm package; others `cwf inspect` and `cwf run` it. See [Workflow packages](./packages).
 - **Compile & run**: deterministic compile, local or live validation, HTTP+WS execution with replayable run metadata. See [Compile & validate](./compile-and-validate) and [Runtime](./runtime).
@@ -53,6 +53,7 @@ The [`cwf` CLI](./cli) ships with the package (`comfy-workflows` works too). Eve
 ## Where to go next
 
 - [Getting started](./getting-started) — install-to-running-workflow walkthrough
+- [Convert a ComfyUI workflow into a package](./convert-workflow) — `cwf init` → pack → publish
 - [Authoring workflows](./authoring) — builder API, templates, escape hatches
 - [Workflow packages](./packages) — installing, inspecting, running, authoring
 - [CLI](./cli) — the full command set

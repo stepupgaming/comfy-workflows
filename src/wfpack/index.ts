@@ -11,3 +11,7 @@
 export * from "./manifest.js";
 export * from "./discover.js";
 export * from "./derive.js";
+export * from "./portability.js";
+export * from "./suggest.js";
+export * from "./expose.js";
+export * from "./init.js";

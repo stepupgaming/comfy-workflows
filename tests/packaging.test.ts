@@ -82,9 +82,11 @@ describe("npm tarball consumer", () => {
     expect(out).toMatch(/CONSUMER_OK [0-9a-f]{12}/);
 
     // Types ship with the tarball.
-    expect(existsSync(join(consumer, "node_modules", "@stepupgaming", "comfy-workflows", "dist", "index.d.ts"))).toBe(
-      true,
-    );
+    expect(
+      existsSync(
+        join(consumer, "node_modules", "@stepupgaming", "comfy-workflows", "dist", "index.d.ts"),
+      ),
+    ).toBe(true);
 
     // Both CLI binaries work from the installed package.
     const bin = join(
@@ -96,8 +98,86 @@ describe("npm tarball consumer", () => {
       "cli",
       "bin.js",
     );
-    const help = execFileSync(process.execPath, [bin, "--help"], { cwd: consumer, encoding: "utf8" });
+    const help = execFileSync(process.execPath, [bin, "--help"], {
+      cwd: consumer,
+      encoding: "utf8",
+    });
     expect(help).toContain("cwf — code-first, typed, composable workflows for ComfyUI");
+    expect(help).toContain("cwf init");
+    expect(help).toContain("cwf expose");
+    expect(help).toContain("cwf suggest");
+
+    // Standalone package authoring from the installed CLI — no monorepo checkout.
+    const wf = join(root, "fixtures", "workflows", "t2i.api.json");
+    const pkgDir = join(consumer, "packaged-demo");
+    const initOut = execFileSync(
+      process.execPath,
+      [bin, "init", "packaged-demo", "--from", wf, "--out", pkgDir, "--json"],
+      { cwd: consumer, encoding: "utf8" },
+    );
+    expect(initOut).toContain('"ok": true');
+    const suggestOut = execFileSync(process.execPath, [bin, "suggest", pkgDir, "--json"], {
+      cwd: consumer,
+      encoding: "utf8",
+    });
+    const suggest = JSON.parse(suggestOut.slice(suggestOut.indexOf("{")));
+    expect(suggest.suggestions.some((s: { name: string }) => s.name === "checkpoint")).toBe(true);
+    execFileSync(
+      process.execPath,
+      [
+        bin,
+        "expose",
+        "checkpoint",
+        "--node",
+        "4",
+        "--input",
+        "ckpt_name",
+        "--required",
+        "--dir",
+        pkgDir,
+      ],
+      { cwd: consumer, encoding: "utf8" },
+    );
+    execFileSync(
+      process.execPath,
+      [bin, "expose", "prompt", "--node", "6", "--input", "text", "--dir", pkgDir],
+      { cwd: consumer, encoding: "utf8" },
+    );
+    const packOut = execFileSync(process.execPath, [bin, "pack", pkgDir, "--json"], {
+      cwd: consumer,
+      encoding: "utf8",
+    });
+    const packJson = JSON.parse(packOut.slice(packOut.indexOf("{")));
+    expect(packJson.ok).toBe(true);
+
+    const packed = execFileSync(
+      process.execPath,
+      [npmCli, "pack", "--pack-destination", consumer],
+      {
+        cwd: pkgDir,
+        encoding: "utf8",
+      },
+    );
+    const wfTgz = join(consumer, packed.trim().split("\n").pop()!.trim().split(/[\\/]/).pop()!);
+    const second = mkdtempSync(join(tmpdir(), "cwf-wf-consumer-"));
+    writeFileSync(
+      join(second, "package.json"),
+      JSON.stringify({ name: "wf-consumer", type: "module" }),
+    );
+    execFileSync(process.execPath, [npmCli, "install", wfTgz, tgzPath], {
+      cwd: second,
+      stdio: "pipe",
+    });
+    const inspect = execFileSync(process.execPath, [bin, "inspect", "packaged-demo", "--json"], {
+      cwd: second,
+      encoding: "utf8",
+    });
+    const inspected = JSON.parse(inspect.slice(inspect.indexOf("{")));
+    expect(inspected.ok).toBe(true);
+    expect(inspected.templateParams.some((p: { name: string }) => p.name === "checkpoint")).toBe(
+      true,
+    );
+    expect(inspected.templateParams.some((p: { name: string }) => p.name === "prompt")).toBe(true);
   }, 180_000);
 });
 

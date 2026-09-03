@@ -1,7 +1,8 @@
 import type { Graph } from "../ir/types.js";
 import { templateParams } from "../ir/template.js";
 import type { WorkflowManifest } from "./manifest.js";
-import { deriveNodeClasses, findEmbeddedLocalPaths } from "./discover.js";
+import { deriveNodeClasses } from "./discover.js";
+import { exposeNameForPath, findLocalPathFindings } from "./portability.js";
 
 /**
  * Manifest ↔ IR coherence checks. Shared by `cwf pack` and the test suite.
@@ -106,11 +107,11 @@ export function checkPackageCoherence(manifest: WorkflowManifest, graph: Graph):
     );
 
   // --- portability ---
-  for (const p of findEmbeddedLocalPaths(graph))
+  for (const f of findLocalPathFindings(graph))
     err(
       "E_PACK_LOCAL_PATH",
-      `IR embeds a machine-local path: ${p}.`,
-      "Parametrize the path or ship it relative to the package.",
+      `node ${f.nodeId} input "${f.input}" contains:\n    ${f.value}`,
+      `Make this portable with:\n    cwf expose ${exposeNameForPath(f.input)} --node ${f.nodeId} --input ${f.input} --required`,
     );
 
   // --- informational ---

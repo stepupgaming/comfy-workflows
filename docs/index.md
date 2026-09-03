@@ -10,17 +10,17 @@ hero:
       text: Get started
       link: /guide/getting-started
     - theme: alt
+      text: Package an existing workflow
+      link: /guide/convert-workflow
+    - theme: alt
       text: Workflow packages
       link: /guide/packages
-    - theme: alt
-      text: CLI reference
-      link: /guide/cli
 
 features:
   - title: Import existing workflows
-    details: Editor, API, and frontend JSON all import into Graph IR — ids, titles, and modes preserved — with optional TypeScript emission so legacy graphs become editable code.
-    link: /guide/getting-started#importing-existing-workflows
-    linkText: Import guide
+    details: Editor, API, and frontend JSON all import into Graph IR — ids, titles, and modes preserved. cwf init turns a working workflow.json into a publishable npm package.
+    link: /guide/convert-workflow
+    linkText: Package an existing workflow
   - title: Author typed workflows
     details: Generated, fully typed wrappers for every node in your defs snapshot. g.add(spec, params) is type-checked end to end, with rawNode() and unsafe() escape hatches.
     link: /guide/authoring

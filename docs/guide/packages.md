@@ -88,21 +88,37 @@ Template placeholders survive composition (it stays lazy until instantiation), s
 
 ## Authoring a workflow package
 
+The public path starts from a workflow you already have:
+
+```sh
+cwf init my-workflow --from workflow.json
+cd my-workflow
+cwf suggest .
+cwf expose checkpoint --node … --input ckpt_name --required
+cwf pack
+npm publish
+```
+
+That is the whole authoring workflow. `cwf init` writes a standalone package — `package.json`, `comfy.workflow.json`, `workflow.ir.json`, `workflow.ts`, README, `.gitignore` — using the same importer and package format as everything else. No repository checkout and no internal build scripts.
+
+See [Convert a ComfyUI workflow into a package](/guide/convert-workflow) for the end-to-end tutorial.
+
+If you prefer to author in TypeScript from scratch:
+
 1. Build a template graph — parameters via `g.param()` or recipe `ParamRef` options. No machine-local paths; checkpoint names are parameters.
 2. Declare outputs with `g.output(handle, { name })`.
-3. Write a builder module exporting the graph plus static manifest fields (title, description, outputs, model notes).
-4. Generate the artifacts: `workflow.ir.json` plus `comfy.workflow.json` with parameters and `nodeClasses` **derived from the IR** — derivation keeps the manifest honest by construction. The repo's `scripts/build-workflow-packages.mjs` shows the pattern.
-5. Validate before publishing:
+3. Run `cwf init` on compiled/exported JSON, or write `workflow.ir.json` + `comfy.workflow.json` yourself with parameters and `nodeClasses` **derived from the IR**.
+4. Validate before publishing:
 
 ```sh
 cwf pack ./my-package
 ```
 
-`pack` checks package metadata, manifest schema, entry resolution, IR parsing, parameter/output coherence, node-class agreement (missing *or stale* entries fail), embedded machine-local paths, and the no-JS-execution property. It exits non-zero on any error and supports `--json` for CI.
+`pack` checks package metadata, manifest schema, entry resolution, IR parsing, parameter/output coherence, node-class agreement (missing *or stale* entries fail), embedded machine-local paths, and the no-JS-execution property. It exits non-zero on any error and supports `--json` for CI. Absolute paths fail with `E_PACK_LOCAL_PATH` and a suggested `cwf expose … --required`.
 
-6. Publish to npm normally. If the wrapper imports core APIs, declare a `peerDependency` on `@stepupgaming/comfy-workflows` — parsing the manifest/IR itself must never require the SDK.
+5. Publish to npm normally. If the wrapper imports core APIs, declare a `peerDependency` on `@stepupgaming/comfy-workflows` — parsing the manifest/IR itself must never require the SDK.
 
-See the [manifest reference](/reference/workflow-manifest) for the full `comfy.workflow.json` contract, and the first-party [`workflow-t2i`](https://github.com/stepupgaming/comfy-workflows/tree/main/packages/workflow-t2i) / [`workflow-hires`](https://github.com/stepupgaming/comfy-workflows/tree/main/packages/workflow-hires) packages for working examples.
+See the [manifest reference](/reference/workflow-manifest) for the full `comfy.workflow.json` contract. First-party packages in this repo (`workflow-t2i`, `workflow-hires`) are maintained with a repository-only helper under `scripts/` — that is not the public authoring path.
 
 ## First-party packages
 

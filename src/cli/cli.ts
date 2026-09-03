@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { join } from "node:path";
@@ -11,16 +12,23 @@ import { emitTs } from "../emit-ts/emit.js";
 import { generateNodeModules } from "../codegen/codegen.js";
 import { importComfyJson } from "../import/index.js";
 import { parseGraph, serializeGraph } from "../ir/serialize.js";
-import type { Graph } from "../ir/types.js";
+import type { Graph, ParamValue } from "../ir/types.js";
 import { instantiateTemplate } from "../ir/template.js";
 import {
   WORKFLOW_MANIFEST_FILENAME,
   WORKFLOW_PACKAGE_JSON_KEY,
   WORKFLOW_PACKAGE_KEYWORDS,
+  analyzePortability,
+  assertExposeCoherent,
   checkPackageCoherence,
   deriveNodeClasses,
   discoverPackage,
+  exposeParam,
+  generatePackage,
+  inferPackageName,
   loadPackageGraph,
+  manifestFromGraph,
+  suggestParams,
 } from "../wfpack/index.js";
 import { createClient } from "../runtime/client.js";
 import { captureLock, writeLock, readLockAt, lockDrift, type NodePackInfo } from "../lock/lock.js";
@@ -32,7 +40,7 @@ import { parseJsonLossless } from "../lossless-parse.js";
 /**
  * `cwf` CLI — the scriptable surface for agents:
  *   import | snapshot | lock | codegen | compile | validate | run | catalog | explain
- *   pack | inspect (workflow packages)
+ *   init | expose | suggest | pack | inspect (workflow packages)
  *
  * Failures print machine-readable JSON errors to stderr and exit non-zero.
  */
@@ -123,6 +131,12 @@ export async function cli(argv: string[]): Promise<number> {
         return await cmdValidate(positional, flags);
       case "run":
         return await cmdRun(positional, flags);
+      case "init":
+        return await cmdInit(positional, flags);
+      case "expose":
+        return await cmdExpose(positional, flags);
+      case "suggest":
+        return await cmdSuggest(positional, flags);
       case "pack":
         return await cmdPack(positional, flags);
       case "inspect":
@@ -161,6 +175,9 @@ function printHelp(): void {
       "  cwf compile <workflow.ts | graph.ir.json> [-o out.api.json] [--defs defs.json] [--pretty]",
       "  cwf validate <file> [--url URL] [--defs defs.json]",
       "  cwf run <file> --url URL [--param k=v ...] [--out outdir]",
+      "  cwf init [name] --from <workflow.json> [--out dir] [--git] [--json]",
+      "  cwf expose <param> --node <id> --input <name> [--required] [--description ...] [--default ...]",
+      "  cwf suggest [dir] [--json]                 # deterministic parameter suggestions (no mutation)",
       "  cwf pack [dir] [--json]                    # validate a workflow package",
       "  cwf inspect <package-or-path> [--url URL] [--json]  # inspect without running JS",
       "  cwf explain <file | workflow.ts>   # what does this expand into?",
@@ -756,6 +773,217 @@ async function cmdRun(
   return 0;
 }
 
+function formatValuePreview(value: string): string {
+  if (value.length > 80) return JSON.stringify(value.slice(0, 77) + "...");
+  return JSON.stringify(value);
+}
+
+async function cmdInit(
+  positional: string[],
+  flags: Record<string, string | boolean | string[]>,
+): Promise<number> {
+  const from = flag(flags, "from");
+  if (from === undefined)
+    throw new Error("Usage: cwf init [name] --from <workflow.json> [--out dir] [--git] [--json]");
+  const defs = await loadDefsAny(flag(flags, "defs"));
+  const raw = parseJsonLossless(await readFile(from, "utf8"));
+  const { graph, diagnostics } = importComfyJson(raw, defs);
+  const nameArg = positional[0] ?? path.basename(from);
+  const name = inferPackageName(nameArg);
+  const dest = path.resolve(flag(flags, "out") ?? name.dirName);
+  if (existsSync(dest)) {
+    const { readdirSync } = await import("node:fs");
+    if (readdirSync(dest).length > 0)
+      throw new Error(`Destination ${dest} already exists and is not empty`);
+  }
+  const generated = generatePackage({
+    name,
+    graph,
+    defs,
+    coreVersion: `^${await readCoreVersion()}`,
+  });
+  await mkdir(dest, { recursive: true });
+  for (const [rel, content] of Object.entries(generated.files)) {
+    await writeFile(path.join(dest, rel), content, "utf8");
+  }
+  if (flags["git"] === true) {
+    try {
+      execFileSync("git", ["init"], { cwd: dest, stdio: "pipe" });
+    } catch (e) {
+      process.stderr.write(
+        JSON.stringify({
+          warning: "E_GIT_INIT_FAILED",
+          message: `git init failed (${e instanceof Error ? e.message : String(e)}); package files were still written.`,
+        }) + "\n",
+      );
+    }
+  }
+  const asJson = flags["json"] === true;
+  const payload = {
+    ok: true,
+    dir: dest,
+    package: name.npmName,
+    title: name.title,
+    files: Object.keys(generated.files),
+    nodeClasses: generated.nodeClasses,
+    portability: generated.portability,
+    suggestions: generated.suggestions,
+    diagnostics,
+  };
+  if (asJson) {
+    process.stdout.write(JSON.stringify(payload, null, 2) + "\n");
+    return 0;
+  }
+  const lines: string[] = [];
+  lines.push(`Created package: ${dest}`);
+  lines.push(`  npm name: ${name.npmName}`);
+  lines.push(`  files: ${Object.keys(generated.files).join(", ")}`);
+  if (generated.portability.length > 0) {
+    lines.push("");
+    lines.push("Portability warnings:");
+    for (const f of generated.portability) {
+      lines.push(`  ${f.kind}:`);
+      lines.push(`    node ${f.nodeId} / ${f.input}`);
+      lines.push(`    value: ${f.value}`);
+    }
+    const first = generated.portability[0];
+    const exposeHint =
+      generated.suggestions.find((s) => s.nodeId === first.nodeId && s.input === first.input)
+        ?.name ?? first.input.replace(/_/g, "-");
+    lines.push("");
+    lines.push("Suggested next step:");
+    lines.push(`  cwf expose ${exposeHint} --node ${first.nodeId} --input ${first.input}`);
+    if (generated.suggestions.length > 1) {
+      lines.push("  (see `cwf suggest .` for the full list)");
+    }
+  } else {
+    lines.push("");
+    lines.push("Next:");
+    lines.push(`  cd ${dest}`);
+    lines.push("  cwf pack");
+    lines.push("  npm publish");
+  }
+  process.stdout.write(lines.join("\n") + "\n");
+  return 0;
+}
+
+async function readCoreVersion(): Promise<string> {
+  try {
+    const json = JSON.parse(await readFile(path.join(PKG_ROOT, "package.json"), "utf8")) as {
+      version?: string;
+    };
+    return json.version ?? "0.1.0";
+  } catch {
+    return "0.1.0";
+  }
+}
+
+async function cmdExpose(
+  positional: string[],
+  flags: Record<string, string | boolean | string[]>,
+): Promise<number> {
+  const paramName = positional[0];
+  const nodeId = flag(flags, "node");
+  const input = flag(flags, "input");
+  if (paramName === undefined || nodeId === undefined || input === undefined)
+    throw new Error(
+      "Usage: cwf expose <param-name> --node <node-id> --input <input-name> [--dir pkg] [--required] [--description ...] [--default ...]",
+    );
+  const dir = flag(flags, "dir") ?? process.cwd();
+  const pkg = discoverPackage(dir);
+  const graph = loadPackageGraph(pkg);
+  const defs = await loadDefsAny(flag(flags, "defs"));
+  const defaultRaw = flag(flags, "default");
+  const parsedDefault =
+    defaultRaw === undefined ? undefined : parseParams([`_=${defaultRaw}`])["_"];
+  const { graph: next } = exposeParam(graph, {
+    name: paramName,
+    nodeId,
+    input,
+    required: flags["required"] === true,
+    description: flag(flags, "description"),
+    default: parsedDefault as ParamValue | undefined,
+    defs,
+  });
+  const manifest = manifestFromGraph(next, pkg.manifest);
+  assertExposeCoherent(manifest, next);
+  const irText = serializeGraph(next, { pretty: true }) + "\n";
+  const manifestText = JSON.stringify(manifest, null, 2) + "\n";
+  const tsText = emitTs(next, { defs, moduleName: manifest.name }) + "\n";
+  // Validation already ran. Snapshot the previous files so a later write
+  // failure can restore them (Windows cannot atomically rename-over).
+  const manPath = path.join(pkg.dir, WORKFLOW_MANIFEST_FILENAME);
+  const tsPath = path.join(pkg.dir, "workflow.ts");
+  const prevIr = await readFile(pkg.irPath, "utf8");
+  const prevMan = await readFile(manPath, "utf8").catch(() => undefined);
+  const prevTs = await readFile(tsPath, "utf8").catch(() => undefined);
+  try {
+    await writeFile(pkg.irPath, irText, "utf8");
+    await writeFile(manPath, manifestText, "utf8");
+    await writeFile(tsPath, tsText, "utf8");
+  } catch (e) {
+    await writeFile(pkg.irPath, prevIr, "utf8").catch(() => undefined);
+    if (prevMan !== undefined) await writeFile(manPath, prevMan, "utf8").catch(() => undefined);
+    if (prevTs !== undefined) await writeFile(tsPath, prevTs, "utf8").catch(() => undefined);
+    throw e;
+  }
+  if (flags["json"] === true) {
+    process.stdout.write(
+      JSON.stringify(
+        {
+          ok: true,
+          param: paramName,
+          node: nodeId,
+          input,
+          required: manifest.parameters[paramName]?.required ?? false,
+          dir: pkg.dir,
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    return 0;
+  }
+  process.stdout.write(
+    `exposed ${paramName} ← ${nodeId}.${input} (${manifest.parameters[paramName]?.required ? "required" : "optional"})\n`,
+  );
+  return 0;
+}
+
+async function cmdSuggest(
+  positional: string[],
+  flags: Record<string, string | boolean | string[]>,
+): Promise<number> {
+  const dir = positional[0] ?? process.cwd();
+  const pkg = discoverPackage(dir);
+  const graph = loadPackageGraph(pkg);
+  const defs = await loadDefsAny(flag(flags, "defs"));
+  const suggestions = suggestParams(graph, defs);
+  const portability = analyzePortability(graph);
+  if (flags["json"] === true) {
+    process.stdout.write(
+      JSON.stringify({ ok: true, dir: pkg.dir, suggestions, portability }, null, 2) + "\n",
+    );
+    return 0;
+  }
+  if (suggestions.length === 0) {
+    process.stdout.write("No parameter suggestions.\n");
+    return 0;
+  }
+  const lines: string[] = ["Suggested parameters", ""];
+  for (const s of suggestions) {
+    lines.push(s.name);
+    lines.push(`  ${s.nodeId}.${s.input}`);
+    lines.push(`  current: ${formatValuePreview(s.current)}`);
+    lines.push(
+      `  cwf expose ${s.name} --node ${s.nodeId} --input ${s.input}${s.requiredSuggestion ? " --required" : ""}`,
+    );
+    lines.push("");
+  }
+  process.stdout.write(lines.join("\n"));
+  return 0;
+}
+
 async function cmdPack(
   positional: string[],
   flags: Record<string, string | boolean | string[]>,
@@ -813,14 +1041,22 @@ async function cmdPack(
     );
   } else {
     process.stdout.write(`pack ${pkg.dir}\n`);
-    process.stdout.write(`  package: ${String(pj["name"] ?? "?")} ${String(pj["version"] ?? "")}\n`);
+    process.stdout.write(
+      `  package: ${String(pj["name"] ?? "?")} ${String(pj["version"] ?? "")}\n`,
+    );
     process.stdout.write(
       `  workflow: ${pkg.manifest.title} (${pkg.manifest.name}) → ${pkg.manifest.entry}\n`,
     );
     process.stdout.write(`  nodes: ${report.nodeClasses.derived.join(", ") || "—"}\n`);
-    for (const d of diagnostics)
+    for (const d of diagnostics) {
       process.stdout.write(`  ${d.level === "error" ? "✗" : "⚠"} [${d.code}] ${d.message}\n`);
-    process.stdout.write(errors.length === 0 ? "  ok: package is publishable\n" : `  ok: false (${errors.length} error(s))\n`);
+      if (d.hint) process.stdout.write(`      ${d.hint.replace(/\n/g, "\n      ")}\n`);
+    }
+    process.stdout.write(
+      errors.length === 0
+        ? "  ok: package is publishable\n"
+        : `  ok: false (${errors.length} error(s))\n`,
+    );
   }
   return errors.length === 0 ? 0 : 1;
 }
@@ -830,7 +1066,8 @@ async function cmdInspect(
   flags: Record<string, string | boolean | string[]>,
 ): Promise<number> {
   const spec = positional[0];
-  if (spec === undefined) throw new Error("Usage: cwf inspect <package-or-path> [--url URL] [--json]");
+  if (spec === undefined)
+    throw new Error("Usage: cwf inspect <package-or-path> [--url URL] [--json]");
   // Discovery + IR load only — package JS is never executed.
   const pkg = discoverPackage(spec);
   const graph = loadPackageGraph(pkg);
@@ -863,7 +1100,11 @@ async function cmdInspect(
       JSON.stringify(
         {
           ok: true,
-          package: { name: pkg.packageJson["name"] ?? null, version: pkg.packageJson["version"] ?? null, dir: pkg.dir },
+          package: {
+            name: pkg.packageJson["name"] ?? null,
+            version: pkg.packageJson["version"] ?? null,
+            dir: pkg.dir,
+          },
           manifest: pkg.manifest,
           templateParams: params,
           nodeClasses,
@@ -878,7 +1119,9 @@ async function cmdInspect(
   const lines: string[] = [];
   lines.push(`${pkg.manifest.title} (${pkg.manifest.name})`);
   if (pkg.manifest.description) lines.push(`  ${pkg.manifest.description}`);
-  lines.push(`  package: ${String(pkg.packageJson["name"] ?? spec)} ${String(pkg.packageJson["version"] ?? "")}`);
+  lines.push(
+    `  package: ${String(pkg.packageJson["name"] ?? spec)} ${String(pkg.packageJson["version"] ?? "")}`,
+  );
   lines.push(`  entry: ${pkg.manifest.entry}`);
   lines.push(`  params:`);
   for (const p of params)
@@ -909,7 +1152,8 @@ async function cmdInspect(
   return 0;
 }
 
-async function cmdExplain(  positional: string[],
+async function cmdExplain(
+  positional: string[],
   flags: Record<string, string | boolean | string[]>,
 ): Promise<number> {
   const input = positional[0];

@@ -94,6 +94,9 @@ out/<runId>/<files>      # downloaded artifacts
 ## CLI
 
 ```
+cwf init      my-workflow --from workflow.json                          # existing Comfy JSON → standalone npm package
+cwf suggest   .                                                         # deterministic parameter suggestions (no mutation)
+cwf expose    checkpoint --node 4 --input ckpt_name                     # promote a widget to a package parameter
 cwf import    existing-workflow.json [--ts workflows/foo/workflow.ts]  # editor v0.4 / workflow v1 / API JSON → IR (+ TS); lossless for >2^53 ints
 cwf snapshot  --url http://127.0.0.1:8188 -o fixtures/object_info.json  # capture the node universe
 cwf lock      --url URL [-o comfy.lock.json]                            # comfy.lock.json: version + objectInfoHash + node packs
@@ -107,6 +110,8 @@ cwf inspect   <package-or-path> [--url URL] [--json]                    # metada
 cwf explain   workflows/foo/workflow.ts                                 # "what did hiresFix actually create?"
 cwf catalog   [query]                                                   # grep-able node discovery
 ```
+
+The happy path from an existing ComfyUI workflow is `cwf init my-workflow --from workflow.json` → `cwf pack` → `npm publish`. Tutorial: https://stepupgaming.github.io/comfy-workflows/guide/convert-workflow
 
 `compile`, `validate`, and `run` accept workflow.ts, `.ir.json` documents, **and Comfy workflow JSON directly** (editor v0.4 / workflow v1 / API format — imported on the fly, losslessly for >2^53 ints). `validate --url` NEVER executes: it fetches the live `/object_info` and validates locally against that universe (only `run` queues work). All three check `comfy.lock.json` (or `--lock <path>`) and report `E_LOCK_DRIFT` as a warning. `-o`, `-u`, `-d`, `-p` short flags work alongside the long forms. Every error prints machine-readable JSON (`{ "error": { "code": "E_TYPE_MISMATCH", "nodeId": "n5", "input": "clip", "expected": "CLIP", "got": "MODEL" } }`).
 
@@ -141,7 +146,7 @@ pnpm test          # vitest — unit + golden + round-trip + mocked runtime; no 
 pnpm typecheck
 pnpm build         # tsdown → dist/
 pnpm codegen:core  # regenerate src/nodes/gen from fixtures/object_info/core.json
-pnpm build:packages  # regenerate workflow package IR + manifests (CI enforces freshness)
+pnpm build:packages  # repo-only: regenerate first-party package IR + manifests (not the public authoring path)
 ```
 
 Live integration tests run only when `COMFY_URL` points at a running ComfyUI instance (e.g. `COMFY_URL=http://127.0.0.1:8188 pnpm test`); they exercise `/object_info`, import/compile with live defs, server-side validation, `/prompt` submission, WS/history completion, artifact retrieval, and replay metadata. They build their workflows from whatever nodes the live instance exposes — no project-specific fixtures.

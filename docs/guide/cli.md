@@ -54,6 +54,30 @@ cwf validate <file> [--url URL] [--defs defs.json] [--lock comfy.lock.json]
 
 Checks a workflow against a defs universe **without queueing any work — it never executes**. With `--url`, it validates against the live `/object_info`.
 
+### `cwf init`
+
+```
+cwf init [name] --from <workflow.json> [--out dir] [--git] [--json] [--defs defs.json]
+```
+
+Turn an existing ComfyUI workflow JSON (editor v0.4, workflow v1, or API/prompt) into a complete standalone npm package: `package.json`, `comfy.workflow.json`, `workflow.ir.json`, `workflow.ts`, README, `.gitignore`. Semantics are preserved; nothing is rewritten. Prints portability warnings (checkpoints, absolute paths) and does not guess bypasses. `--git` runs `git init` in the new directory. `--json` emits the same report for agents. See [Convert a ComfyUI workflow into a package](./convert-workflow).
+
+### `cwf suggest`
+
+```
+cwf suggest [dir] [--json]
+```
+
+Deterministic parameter suggestions (checkpoint, prompts, seed, size, steps, cfg, denoise, paths). Never mutates files.
+
+### `cwf expose`
+
+```
+cwf expose <param-name> --node <node-id> --input <input-name> [--required] [--description ...] [--default ...]
+```
+
+Promote a concrete widget input to a package parameter. Updates IR, manifest, and `workflow.ts` together after validation. Machine-local paths never become portable defaults.
+
 ### `cwf run`
 
 ```

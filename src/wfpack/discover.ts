@@ -133,33 +133,3 @@ export function graphFromPackageValue(value: unknown): Graph {
 export function deriveNodeClasses(graph: Graph): string[] {
   return [...new Set(Object.values(graph.nodes).map((n) => n.type))].sort();
 }
-
-/** Absolute Windows/POSIX paths embedded in AssetRef params break portability. */
-const ABS_PATH = /^(?:[A-Za-z]:[\\/]|\\\\|\/)/;
-
-function assetPaths(value: unknown, out: string[]): void {
-  if (value === null || typeof value !== "object") return;
-  if (Array.isArray(value)) {
-    for (const v of value) assetPaths(v, out);
-    return;
-  }
-  const rec = value as Record<string, unknown>;
-  if (typeof rec["$asset"] === "string") {
-    out.push(rec["$asset"]);
-    return;
-  }
-  for (const v of Object.values(rec)) assetPaths(v, out);
-}
-
-/** Machine-local paths embedded in the packaged IR (portability hazard). */
-export function findEmbeddedLocalPaths(graph: Graph): string[] {
-  const found: string[] = [];
-  for (const node of Object.values(graph.nodes)) {
-    for (const v of Object.values(node.params)) {
-      const paths: string[] = [];
-      assetPaths(v as unknown, paths);
-      for (const p of paths) if (ABS_PATH.test(p)) found.push(`${node.type}: ${p}`);
-    }
-  }
-  return [...new Set(found)].sort();
-}
