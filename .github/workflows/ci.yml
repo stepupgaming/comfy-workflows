@@ -17,8 +17,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test
       - run: pnpm build
+      - run: pnpm test
       # Generated wrappers must be up to date with the committed defs snapshot.
       - run: pnpm codegen:core && git diff --exit-code src/nodes/gen
       # Workflow package artifacts (IR + manifest) must be up to date.
