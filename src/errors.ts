@@ -48,6 +48,22 @@ export const ErrorCodes = {
   ConnectionFailed: "E_CONNECTION_FAILED",
   /** Imported workflow uses a construct the importer cannot represent yet. */
   UnsupportedFeature: "E_UNSUPPORTED_FEATURE",
+  /** Multiple verified registry packs provide the same node class. */
+  NodePackAmbiguous: "E_NODE_PACK_AMBIGUOUS",
+  /** No verified registered pack could be identified for a node class. */
+  NodePackUnknown: "E_NODE_PACK_UNKNOWN",
+  /** Node-pack metadata in the manifest is invalid. */
+  InvalidNodePack: "E_INVALID_NODE_PACK",
+  /** Declared version range matches no active Registry version. */
+  NodePackVersionUnsatisfied: "E_NODE_PACK_VERSION_UNSATISFIED",
+  /** Target Comfy Python interpreter could not be established. */
+  ComfyPythonUnknown: "E_COMFY_PYTHON_UNKNOWN",
+  /** User declined the setup plan (or non-interactive without --yes). */
+  SetupDeclined: "E_SETUP_DECLINED",
+  /** Setup cannot be applied (remote URL, missing Comfy path, missing installer). */
+  SetupNotApplicable: "E_SETUP_NOT_APPLICABLE",
+  /** Official installer returned a failure. */
+  SetupFailed: "E_SETUP_FAILED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
@@ -62,19 +78,6 @@ export interface ComfyErrorFields {
   got?: string;
   allowed?: string[];
   /** Original server/import payload, when applicable. */
-  details?: unknown;
-}
-
-export interface ComfyErrorFields {
-  code: ErrorCode;
-  message: string;
-  hint?: string;
-  nodeId?: string;
-  input?: string;
-  expected?: string;
-  got?: string;
-  allowed?: string[];
-  /** Original server payload, when applicable. */
   details?: unknown;
 }
 

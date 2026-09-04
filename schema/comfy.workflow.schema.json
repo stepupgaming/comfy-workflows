@@ -8,8 +8,9 @@
   "additionalProperties": false,
   "properties": {
     "specVersion": {
-      "description": "Manifest spec version. Versioned from day one.",
-      "const": 1
+      "description": "Manifest spec version. 1 = legacy string nodePacks; 2 = rich NodePackRequirement objects.",
+      "type": "integer",
+      "enum": [1, 2]
     },
     "name": {
       "description": "Machine identity, e.g. \"text-to-image\". Unique within its npm package.",
@@ -80,9 +81,45 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "nodePacks": {
-          "description": "Node-pack names, when known. Informational in v1.",
+          "description": "Installable custom-node packs. specVersion 1: string registry ids. specVersion 2: NodePackRequirement objects. repository is informational — never an automatic git clone.",
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,99}$"
+              },
+              {
+                "type": "object",
+                "required": ["id"],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "description": "Canonical Comfy Registry / Manager package id.",
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z][A-Za-z0-9._-]{0,99}$"
+                  },
+                  "name": { "type": "string" },
+                  "version": {
+                    "description": "Semver range (^1.8.0, >=1.0.0, or exact 1.2.3).",
+                    "type": "string"
+                  },
+                  "repository": {
+                    "description": "Informational source URL. Never treated as an automatic clone.",
+                    "type": "string"
+                  },
+                  "provides": {
+                    "type": "array",
+                    "items": { "type": "string", "minLength": 1 }
+                  },
+                  "optional": { "type": "boolean" },
+                  "source": { "enum": ["registry", "manual"] }
+                }
+              }
+            ]
+          },
           "default": []
         },
         "models": {

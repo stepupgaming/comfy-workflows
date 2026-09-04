@@ -71,7 +71,13 @@ cwf run workflows/t2i/workflow.ts --url http://127.0.0.1:8188 --out out/ --param
 - `validate` never queues work: it fetches live `/object_info` (when `--url` is given) and checks the graph against that universe locally.
 - `run` submits, streams progress, downloads artifacts into `out/<runId>/`, and writes `run.json` with the exact `/prompt` body — see [Runtime & execution](./runtime).
 
-Prefer starting from a published workflow? Install one and skip authoring entirely: [Workflow packages](./packages).
+Prefer starting from a published workflow? Install one and skip authoring entirely: [Workflow packages](./packages). If `inspect --url` reports missing custom nodes, prepare the Comfy tree with one explicit command — [Custom-node dependencies](./custom-nodes):
+
+```bash
+cwf setup @stepupgaming/comfy-workflow-t2i --comfy C:\ComfyUI
+```
+
+`cwf run` never installs executable custom-node code.
 
 ## Package an existing workflow
 
@@ -103,6 +109,7 @@ cwf import existing-workflow.json --ts workflows/foo/workflow.ts
 - [Convert a ComfyUI workflow into a package](./convert-workflow) — `cwf init` → pack → publish
 - [Authoring workflows](./authoring) — builder API, escape hatches, templates
 - [Workflow packages](./packages) — install, inspect, run, author
+- [Custom-node dependencies](./custom-nodes) — `cwf inspect` → `cwf setup` → restart → `cwf run`
 - [Recipes](/reference/recipes) — `textToImage`, `hiresFix`, and friends
 - [CLI](./cli) — the full command set
 - [Errors](./errors) — the machine-readable taxonomy

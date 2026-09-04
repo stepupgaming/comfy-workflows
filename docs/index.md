@@ -18,7 +18,7 @@ hero:
 
 features:
   - title: Import existing workflows
-    details: Editor, API, and frontend JSON all import into Graph IR — ids, titles, and modes preserved. cwf init turns a working workflow.json into a publishable npm package.
+    details: Editor, API, and frontend JSON all import into Graph IR — ids, titles, and modes preserved. cwf init turns a working workflow.json into a publishable workflow package.
     link: /guide/convert-workflow
     linkText: Package an existing workflow
   - title: Author typed workflows
@@ -29,10 +29,10 @@ features:
     details: Workflow packages ship canonical IR plus a typed wrapper. Compose a packaged template with hiresFix or withLora — one valid IR, deterministic compile, Comfy execution.
     link: /guide/packages
     linkText: Packages guide
-  - title: Publish & install via npm
-    details: Versioned comfy.workflow.json manifests make workflows discoverable and inspectable without executing code. cwf pack validates before you publish.
-    link: /guide/packages#authoring-a-workflow-package
-    linkText: Author a package
+  - title: Publish & inspect as packages
+    details: Versioned comfy.workflow.json manifests make workflows inspectable without executing code. Host-agnostic (npm, GitHub, or a local tarball). cwf pack validates before you publish. cwf setup prepares verified Registry packs after explicit approval — run never installs them.
+    link: /guide/custom-nodes
+    linkText: Custom-node dependencies
   - title: Compile deterministically
     details: compile(graph, defs) produces validated, byte-identical API JSON for identical graphs — stable ids, sorted emit, conservative bypass lowering, structured errors.
     link: /guide/compile-and-validate

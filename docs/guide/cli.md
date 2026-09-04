@@ -57,10 +57,10 @@ Checks a workflow against a defs universe **without queueing any work — it nev
 ### `cwf init`
 
 ```
-cwf init [name] --from <workflow.json> [--out dir] [--git] [--json] [--defs defs.json]
+cwf init [name] --from <workflow.json> [--out dir] [--git] [--json] [--defs defs.json] [--url URL]
 ```
 
-Turn an existing ComfyUI workflow JSON (editor v0.4, workflow v1, or API/prompt) into a complete standalone npm package: `package.json`, `comfy.workflow.json`, `workflow.ir.json`, `workflow.ts`, README, `.gitignore`. Semantics are preserved; nothing is rewritten. Prints portability warnings (checkpoints, absolute paths) and does not guess bypasses. `--git` runs `git init` in the new directory. `--json` emits the same report for agents. See [Convert a ComfyUI workflow into a package](./convert-workflow).
+Turn an existing ComfyUI workflow JSON (editor v0.4, workflow v1, or API/prompt) into a complete standalone npm package: `package.json`, `comfy.workflow.json`, `workflow.ir.json`, `workflow.ts`, README, `.gitignore`. Semantics are preserved; nothing is rewritten. Prints portability warnings (checkpoints, absolute paths) and does not guess bypasses. `--url` optionally discovers Comfy Registry node-pack metadata (never installs). `--git` runs `git init` in the new directory. `--json` emits the same report for agents. See [Convert a ComfyUI workflow into a package](./convert-workflow).
 
 ### `cwf suggest`
 
@@ -93,10 +93,10 @@ cwf run @stepupgaming/comfy-workflow-t2i --url http://127.0.0.1:8188 --param see
 ### `cwf pack`
 
 ```
-cwf pack [dir] [--json]
+cwf pack [dir] [--json] [--publish]
 ```
 
-Validates a workflow package before publication: package metadata, manifest schema, entry resolution, IR parsing, parameter/output coherence, node-class agreement, embedded machine-local paths, and the no-JS-execution property. Exits non-zero on any error. See [Workflow packages](./packages#authoring-a-workflow-package).
+Validates a workflow package before publication: package metadata, manifest schema, entry resolution, IR parsing, parameter/output coherence, node-class agreement, embedded machine-local paths, and the no-JS-execution property. Exits non-zero on any error. Unresolved classes stay warnings — absence from the bundled core snapshot is not proof they are custom. `--publish` still fails contradictory/invalid pack metadata. See [Workflow packages](./packages#authoring-a-workflow-package).
 
 ### `cwf inspect`
 
@@ -104,7 +104,32 @@ Validates a workflow package before publication: package metadata, manifest sche
 cwf inspect <package-or-path> [--url URL] [--json]
 ```
 
-Prints a package's identity, parameters, outputs, and requirements — from manifest + IR, without running its code. With `--url`, additionally compares required node classes against the live instance (✓ available / ✗ missing). `--json` emits the report machine-readably. See [Workflow packages](./packages#inspecting-compatibility).
+Prints a package's identity, parameters, outputs, and requirements — from manifest + IR, without running its code. With `--url`, additionally compares required node classes against the live instance (✓ available / ✗ missing) and reports declared node packs (installed / missing / version unknown). `--json` emits the report machine-readably, including a `dependencies` object. Inspect never installs anything. See [Custom-node dependencies](./custom-nodes) and [Workflow packages](./packages#inspecting-compatibility).
+
+### `cwf resolve-nodes`
+
+```
+cwf resolve-nodes <package-or-path> [--url URL] [--write] [--json]
+```
+
+Maps missing (or all non-core) node classes to Comfy Registry packs after verifying pack-version definitions. The single-class Registry lookup is a hint only. Without `--write` this is read-only. With `--write` it merges **verified** `requires.nodePacks` into `comfy.workflow.json` (specVersion 2). Ambiguous **verified** ownership exits non-zero with `E_NODE_PACK_AMBIGUOUS`; unknown classes report `E_NODE_PACK_UNKNOWN`. No LLM, no guess-from-repo-name, no ranked false-positive installs.
+
+### `cwf node-pack`
+
+```
+cwf node-pack add <registry-id> --provides FooNode,BarNode [--dir pkg] [--name ...] [--version ...]
+cwf node-pack map <class> <registry-id> [--dir pkg]
+```
+
+Manually declare pack metadata when the registry cannot identify an owner. Entries are `source: "manual"` and still have to pass manifest validation. They are not auto-installed by `cwf setup`.
+
+### `cwf setup`
+
+```
+cwf setup <package-or-path> --comfy <Comfy-install-path> [--url URL] [--yes] [--dry-run] [--json]
+```
+
+Prepares a **local** Comfy installation for a workflow. Prints the exact registered packs **and versions** that will be installed (executable Python), asks `Continue? [y/N]` (default No), then delegates to ComfyUI-Manager `cm-cli.py install <id>@<exact>`. Uses the target Comfy Python (`python_embeded` on portable Windows). `--yes` approves the **verified** plan; it does not relax source policy, choose ambiguous providers, or install unsatisfied ranges. `--dry-run` prints the plan and installs nothing. Remote `--url` without `--comfy` plans but does not apply. See [Custom-node dependencies](./custom-nodes).
 
 ### `cwf explain`
 

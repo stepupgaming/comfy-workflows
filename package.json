@@ -1,6 +1,6 @@
 {
   "name": "@stepupgaming/comfy-workflows",
-  "version": "0.2.8",
+  "version": "0.2.10",
   "description": "Comfy Workflows — code-first, typed, composable workflows for ComfyUI.",
   "type": "module",
   "license": "MIT",
@@ -30,6 +30,10 @@
     "./wfpack": {
       "types": "./dist/wfpack/index.d.ts",
       "default": "./dist/wfpack/index.js"
+    },
+    "./deps": {
+      "types": "./dist/deps/index.d.ts",
+      "default": "./dist/deps/index.js"
     },
     "./schema": "./schema/comfy.workflow.schema.json",
     "./package.json": "./package.json",

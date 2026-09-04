@@ -43,6 +43,9 @@ export {
 // Workflow packages (manifest, discovery, coherence checks)
 export * from "./wfpack/index.js";
 
+// Custom-node dependency resolution + setup planning (never auto-installs)
+export * from "./deps/index.js";
+
 // Recipes (composable workflow builders + transforms)
 export * as recipes from "./recipes/index.js";
 export {

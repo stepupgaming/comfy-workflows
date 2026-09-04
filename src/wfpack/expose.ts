@@ -150,7 +150,6 @@ export function manifestFromGraph(graph: Graph, previous: WorkflowManifest): Wor
   });
   return {
     ...previous,
-    specVersion: 1,
     parameters,
     outputs,
     requires: {

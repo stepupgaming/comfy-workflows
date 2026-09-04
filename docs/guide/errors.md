@@ -50,6 +50,14 @@ consumption.
 | `E_TIMEOUT`              | run exceeded the configured timeout                  |
 | `E_CONNECTION_FAILED`    | transport-level failure talking to Comfy             |
 | `E_UNSUPPORTED_FEATURE`  | import met a construct the importer can't represent  |
+| `E_NODE_PACK_AMBIGUOUS`  | more than one **verified** registry pack provides a class |
+| `E_NODE_PACK_UNKNOWN`    | no verified registered pack could be identified for a class |
+| `E_INVALID_NODE_PACK`    | node-pack metadata is invalid (or an unsafe id)      |
+| `E_NODE_PACK_VERSION_UNSATISFIED` | declared version range matches no active Registry version |
+| `E_COMFY_PYTHON_UNKNOWN` | target Comfy Python interpreter could not be established |
+| `E_SETUP_DECLINED`       | setup confirmation was no / missing `--yes`          |
+| `E_SETUP_NOT_APPLICABLE` | setup cannot be applied (remote URL, no Manager)     |
+| `E_SETUP_FAILED`         | official installer returned a failure                |
 
 The CLI additionally reports three envelope-level codes that are not
 compiler/runtime codes: `E_LOCK_DRIFT` (lockfile/defs drift — a *warning*),

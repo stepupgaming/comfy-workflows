@@ -7,6 +7,7 @@ export default defineConfig({
     "src/runtime/index.ts",
     "src/ir/index.ts",
     "src/wfpack/index.ts",
+    "src/deps/index.ts",
     "src/recipes/index.ts",
     "src/cli/bin.ts",
   ],

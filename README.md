@@ -62,18 +62,19 @@ console.log(result.artifacts); // [{ filename, savedPath, type }]
 ```sh
 pnpm add @stepupgaming/comfy-workflow-t2i
 cwf inspect @stepupgaming/comfy-workflow-t2i --url http://127.0.0.1:8188
+cwf setup @stepupgaming/comfy-workflow-t2i --comfy C:\ComfyUI   # if inspect reports missing custom nodes
 cwf run @stepupgaming/comfy-workflow-t2i --url http://127.0.0.1:8188 \
   --param checkpoint=v1-5-pruned-emaonly.safetensors \
   --param prompt="a lighthouse at dusk" --param seed=42
 ```
 
-`inspect` reads the package's manifest + IR as pure data — package JavaScript is never executed. With `--url` it additionally reports which required node classes the live instance has (✓) or lacks (✗).
+`inspect` reads the package's manifest + IR as pure data — package JavaScript is never executed. With `--url` it additionally reports which required node classes the live instance has (✓) or lacks (✗), and which declared node packs are missing. `cwf setup` is the only command that installs custom nodes (registered Comfy Registry packs, after explicit approval). `cwf run` never installs executable Python.
 
 ## What's inside
 
 | Layer                                                        | What it gives you                                                                                                                                                                   |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Workflow packages** (`…/wfpack`, `cwf pack/inspect`)       | Versioned `comfy.workflow.json` manifest + canonical `workflow.ir.json`: installable, inspectable-without-execution, composable workflow distribution over npm                        |
+| **Workflow packages** (`…/wfpack`, `cwf pack/inspect/setup`) | Versioned `comfy.workflow.json` manifest + canonical `workflow.ir.json`: installable, inspectable-without-execution, host-agnostic. `cwf setup` prepares verified Registry packs via ComfyUI-Manager. |
 | **Recipes** (`@stepupgaming/comfy-workflows/recipes`)        | `textToImage`, `img2img`, `inpaint`, `outpaint`, `withLora`, `withControlNet`, `hiresFix`, `upscale`, `explainGraph` — high-level ops that expand into many nodes                     |
 | **Typed node SDK** (`…/nodes`)                               | Generated, fully typed wrappers for every node in your defs snapshot; `g.add(spec, params)` is type-checked end to end                                                              |
 | **Graph IR** (`…/ir`)                                        | The canonical representation: plain JSON, index-canonical slot refs, `{"$int": "..."}` lossless integers, templates with param placeholders, `graphHash`                            |

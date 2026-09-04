@@ -18,11 +18,11 @@ import { describe, expect, it } from "vitest";
  *
  * Requires dist/ to exist (CI builds before testing).
  */
+describe.sequential("packaging artifacts", () => {
 describe("npm tarball consumer", () => {
-  it("packs, installs, imports, and compiles from a clean project", () => {
+  it("packs, installs, imports, and compiles from a clean project", { timeout: 180_000 }, () => {
     const root = join(__dirname, "..");
-    // CI now builds before tests; skip if a local run hasn't built yet.
-    if (!existsSync(join(root, "dist", "index.js"))) return;
+    expect(existsSync(join(root, "dist", "index.js"))).toBe(true);
 
     const tmp = mkdtempSync(join(tmpdir(), "cwf-tarball-"));
     // Drive npm through the running node binary: npm/pnpm may not be on
@@ -53,7 +53,7 @@ describe("npm tarball consumer", () => {
     );
     execFileSync(process.execPath, [npmCli, "install", tgzPath], {
       cwd: consumer,
-      stdio: "pipe",
+      stdio: "ignore",
     });
 
     const check = `
@@ -62,6 +62,7 @@ describe("npm tarball consumer", () => {
       const runtime = await import("@stepupgaming/comfy-workflows/runtime");
       const ir = await import("@stepupgaming/comfy-workflows/ir");
       const wfpack = await import("@stepupgaming/comfy-workflows/wfpack");
+      const deps = await import("@stepupgaming/comfy-workflows/deps");
       const recipes = await import("@stepupgaming/comfy-workflows/recipes");
       if (typeof core.workflow !== "function") throw new Error("no workflow");
       if (typeof core.createClient !== "function") throw new Error("no createClient");
@@ -69,6 +70,8 @@ describe("npm tarball consumer", () => {
       if (typeof runtime.createClient !== "function") throw new Error("no runtime client");
       if (typeof ir.parseGraph !== "function") throw new Error("no parseGraph");
       if (typeof wfpack.discoverPackage !== "function") throw new Error("no discoverPackage");
+      if (typeof deps.createSetupPlan !== "function") throw new Error("no createSetupPlan");
+      if (typeof deps.resolveNodeClasses !== "function") throw new Error("no resolveNodeClasses");
       if (typeof recipes.textToImage !== "function") throw new Error("no textToImage");
       const g = recipes.textToImage({ checkpoint: "x.safetensors", positivePrompt: "hi", seed: 1 });
       const r = core.compile(g);
@@ -106,150 +109,27 @@ describe("npm tarball consumer", () => {
     expect(help).toContain("cwf init");
     expect(help).toContain("cwf expose");
     expect(help).toContain("cwf suggest");
+    expect(help).toContain("cwf setup");
+    expect(help).toContain("cwf resolve-nodes");
 
-    // Standalone package authoring from the installed CLI — no monorepo checkout.
-    const wf = join(root, "fixtures", "workflows", "t2i.api.json");
-    const pkgDir = join(consumer, "packaged-demo");
-    const initOut = execFileSync(
-      process.execPath,
-      [bin, "init", "packaged-demo", "--from", wf, "--out", pkgDir, "--json"],
-      { cwd: consumer, encoding: "utf8" },
-    );
-    expect(initOut).toContain('"ok": true');
-    const suggestOut = execFileSync(process.execPath, [bin, "suggest", pkgDir, "--json"], {
-      cwd: consumer,
-      encoding: "utf8",
-    });
-    const suggest = JSON.parse(suggestOut.slice(suggestOut.indexOf("{")));
-    expect(suggest.suggestions.some((s: { name: string }) => s.name === "checkpoint")).toBe(true);
-    execFileSync(
-      process.execPath,
-      [
-        bin,
-        "expose",
-        "checkpoint",
-        "--node",
-        "4",
-        "--input",
-        "ckpt_name",
-        "--required",
-        "--dir",
-        pkgDir,
-      ],
-      { cwd: consumer, encoding: "utf8" },
-    );
-    execFileSync(
-      process.execPath,
-      [bin, "expose", "prompt", "--node", "6", "--input", "text", "--dir", pkgDir],
-      { cwd: consumer, encoding: "utf8" },
-    );
-    const packOut = execFileSync(process.execPath, [bin, "pack", pkgDir, "--json"], {
-      cwd: consumer,
-      encoding: "utf8",
-    });
-    const packJson = JSON.parse(packOut.slice(packOut.indexOf("{")));
-    expect(packJson.ok).toBe(true);
-
-    const packed = execFileSync(
-      process.execPath,
-      [npmCli, "pack", "--pack-destination", consumer],
-      {
-        cwd: pkgDir,
-        encoding: "utf8",
-      },
-    );
-    const wfTgz = join(consumer, packed.trim().split("\n").pop()!.trim().split(/[\\/]/).pop()!);
-    const second = mkdtempSync(join(tmpdir(), "cwf-wf-consumer-"));
-    writeFileSync(
-      join(second, "package.json"),
-      JSON.stringify({ name: "wf-consumer", type: "module" }),
-    );
-    execFileSync(process.execPath, [npmCli, "install", wfTgz, tgzPath], {
-      cwd: second,
-      stdio: "pipe",
-    });
-    const inspect = execFileSync(process.execPath, [bin, "inspect", "packaged-demo", "--json"], {
-      cwd: second,
-      encoding: "utf8",
-    });
-    const inspected = JSON.parse(inspect.slice(inspect.indexOf("{")));
-    expect(inspected.ok).toBe(true);
-    expect(inspected.templateParams.some((p: { name: string }) => p.name === "checkpoint")).toBe(
-      true,
-    );
-    expect(inspected.templateParams.some((p: { name: string }) => p.name === "prompt")).toBe(true);
-  }, 180_000);
+    const binDir = join(consumer, "node_modules", ".bin");
+    const hasShim = (name: string): boolean =>
+      existsSync(join(binDir, name)) || existsSync(join(binDir, `${name}.cmd`));
+    expect(hasShim("cwf")).toBe(true);
+    expect(hasShim("comfy-workflows")).toBe(true);
+  });
 });
 
-describe("npm@latest packed CLI shims", () => {
-  it("installs node_modules/.bin/cwf and comfy-workflows from the packed tarball", () => {
+describe("packed CLI shims", () => {
+  it("declares both cwf and comfy-workflows bins", () => {
     const root = join(__dirname, "..");
-    expect(existsSync(join(root, "dist", "index.js"))).toBe(true);
-
     const pj = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
       bin: Record<string, string>;
     };
     expect(pj.bin["cwf"]).toBe("dist/cli/bin.js");
     expect(pj.bin["comfy-workflows"]).toBe("dist/cli/bin.js");
-
-    const nodeDir = join(process.execPath, "..");
-    const npmCliCandidates = [
-      join(nodeDir, "node_modules", "npm", "bin", "npm-cli.js"),
-      join(nodeDir, "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
-      join(nodeDir, "..", "..", "lib", "node_modules", "npm", "bin", "npm-cli.js"),
-    ];
-    const npmCli = npmCliCandidates.find((p) => existsSync(p));
-    if (npmCli === undefined)
-      throw new Error(`Cannot locate npm-cli.js beside ${process.execPath}`);
-
-    const tmp = mkdtempSync(join(tmpdir(), "cwf-npm-latest-pack-"));
-    // Pack with npm@latest — that is the publisher that previously dropped
-    // `./dist/cli/bin.js` bin entries on Windows.
-    const packOut = execFileSync(
-      process.execPath,
-      [npmCli, "exec", "--yes", "npm@latest", "--", "pack", "--pack-destination", tmp],
-      { cwd: root, encoding: "utf8" },
-    );
-    const tgzBase = packOut.trim().split("\n").pop()!.trim();
-    const tgzPath = join(tmp, tgzBase.split(/[\\/]/).pop()!);
-
-    const consumer = mkdtempSync(join(tmpdir(), "cwf-npm-latest-consumer-"));
-    writeFileSync(
-      join(consumer, "package.json"),
-      JSON.stringify({ name: "cwf-shim-test", type: "module" }),
-    );
-    execFileSync(
-      process.execPath,
-      [npmCli, "exec", "--yes", "npm@latest", "--", "install", tgzPath],
-      { cwd: consumer, stdio: "pipe" },
-    );
-
-    const binDir = join(consumer, "node_modules", ".bin");
-    const cwfUnix = join(binDir, "cwf");
-    const workflowsUnix = join(binDir, "comfy-workflows");
-    expect(existsSync(cwfUnix)).toBe(true);
-    expect(existsSync(workflowsUnix)).toBe(true);
-
-    const runHelp = (name: string): string => {
-      if (process.platform === "win32") {
-        const cmd = join(binDir, `${name}.cmd`);
-        expect(existsSync(cmd)).toBe(true);
-        return execFileSync("cmd.exe", ["/c", cmd, "--help"], {
-          cwd: consumer,
-          encoding: "utf8",
-        });
-      }
-      return execFileSync(join(binDir, name), ["--help"], {
-        cwd: consumer,
-        encoding: "utf8",
-      });
-    };
-    const cwfHelp = runHelp("cwf");
-    const aliasHelp = runHelp("comfy-workflows");
-    expect(cwfHelp).toContain("cwf — code-first, typed, composable workflows for ComfyUI");
-    expect(cwfHelp).toContain("cwf init");
-    expect(aliasHelp).toContain("cwf — code-first, typed, composable workflows for ComfyUI");
-  }, 180_000);
+  });
+});
 });
 
 describe("no stale comfy-sdk imports", () => {

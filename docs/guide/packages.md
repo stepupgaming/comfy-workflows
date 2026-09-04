@@ -19,12 +19,14 @@ README.md
 
 The manifest and IR are **pure data**. Inspecting or running a package never executes its JavaScript — the CLI reads the JSON directly. The `dist/` wrapper exists so TypeScript users get typed functions; it is never needed to discover, inspect, or run the workflow.
 
-npm is the transport and versioning layer. Comfy Workflows defines the workflow model — there is no custom registry, account system, or store.
+The package **format** is host-agnostic: the same JSON files work from npm, GitHub Packages, a GitHub Release tarball, or a local path. Comfy Workflows defines the workflow model — there is no custom registry, account system, or store. Core and already-published first-party packages may live on npm; new workflow packages may temporarily be distributed via GitHub while npm rate-limits new names.
 
 ## Installing a package
 
 ```sh
 pnpm add @stepupgaming/comfy-workflow-t2i
+cwf inspect @stepupgaming/comfy-workflow-t2i --url http://127.0.0.1:8188
+cwf setup @stepupgaming/comfy-workflow-t2i --comfy C:\ComfyUI   # only if inspect reports missing custom nodes
 ```
 
 Workflow packages are discoverable through npm keywords (`comfy-workflow`, `comfyui`, `comfy-workflows`) and declare a stable pointer in their `package.json`:
@@ -45,7 +47,7 @@ cwf inspect ./packages/workflow-t2i --json
 
 Without `--url`, `inspect` prints the workflow's identity, parameters (required vs optional), declared outputs, required node classes, and model requirements — all from manifest + IR, no code executed.
 
-With `--url`, it additionally compares the required node classes against the live instance's `/object_info`:
+With `--url`, it additionally compares the required node classes against the live instance's `/object_info` and reports declared node packs. Inspect never installs anything. Missing custom nodes are prepared with `cwf setup` — see [Custom-node dependencies](./custom-nodes):
 
 ```
   requires:
@@ -53,6 +55,8 @@ With `--url`, it additionally compares the required node classes against the liv
     ✓ CheckpointLoaderSimple
     ✗ KSampler
   live http://127.0.0.1:8188: MISSING KSampler
+  Setup:
+    cwf setup @stepupgaming/comfy-workflow-t2i --comfy C:\ComfyUI
 ```
 
 `--json` emits the same report machine-readably for agents.
@@ -114,7 +118,7 @@ If you prefer to author in TypeScript from scratch:
 cwf pack ./my-package
 ```
 
-`pack` checks package metadata, manifest schema, entry resolution, IR parsing, parameter/output coherence, node-class agreement (missing _or stale_ entries fail), embedded machine-local paths, and the no-JS-execution property. It exits non-zero on any error and supports `--json` for CI. Absolute paths fail with `E_PACK_LOCAL_PATH` and a suggested `cwf expose … --required`.
+`pack` checks package metadata, manifest schema, entry resolution, IR parsing, parameter/output coherence, node-class agreement (missing _or stale_ entries fail), embedded machine-local paths, and the no-JS-execution property. Custom node classes with no owning `nodePacks` entry produce `W_PACK_UNRESOLVED_NODE_PACK` and a `cwf resolve-nodes … --write` hint — a warning, not a hard error. It exits non-zero on any error and supports `--json` for CI. Absolute paths fail with `E_PACK_LOCAL_PATH` and a suggested `cwf expose … --required`.
 
 5. Publish to npm normally. If the wrapper imports core APIs, declare a `peerDependency` on `@stepupgaming/comfy-workflows` — parsing the manifest/IR itself must never require the SDK.
 

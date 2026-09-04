@@ -6,13 +6,15 @@ import { serializeGraph } from "../ir/serialize.js";
 import { emitTs } from "../emit-ts/emit.js";
 import type { Graph } from "../ir/types.js";
 import type { NodeDefs } from "../defs/types.js";
-import type { WorkflowManifest } from "./manifest.js";
+import type { WorkflowManifest, WorkflowNodePack } from "./manifest.js";
+import { stringifyManifest } from "./write.js";
 import {
   WORKFLOW_MANIFEST_FILENAME,
   WORKFLOW_PACKAGE_JSON_KEY,
   WORKFLOW_PACKAGE_KEYWORDS,
 } from "./manifest.js";
 import { deriveNodeClasses } from "./discover.js";
+import { isCoreNodeClass } from "../deps/core.js";
 import { analyzePortability, type PortabilityFinding } from "./portability.js";
 import { suggestParams, type SuggestedParam } from "./suggest.js";
 import { ComfyError, ErrorCodes } from "../errors.js";
@@ -157,6 +159,8 @@ export interface InitPackageOptions {
    * package — never a hardcoded fallback.
    */
   coreVersion?: string;
+  /** Optional resolved node packs (metadata only — init never installs). */
+  nodePacks?: WorkflowNodePack[];
 }
 
 function scalarDefault(value: unknown): string | number | boolean | undefined {
@@ -204,7 +208,7 @@ export function buildManifest(opts: InitPackageOptions): WorkflowManifest {
     }
   }
   const manifest: WorkflowManifest = {
-    specVersion: 1,
+    specVersion: (opts.nodePacks?.length ?? 0) > 0 ? 2 : 1,
     name: name.workflowName,
     title: name.title,
     entry: "./workflow.ir.json",
@@ -215,7 +219,7 @@ export function buildManifest(opts: InitPackageOptions): WorkflowManifest {
     outputs,
     requires: {
       nodeClasses: deriveNodeClasses(graph),
-      nodePacks: [],
+      nodePacks: opts.nodePacks ?? [],
       models,
     },
   };
@@ -263,6 +267,40 @@ function generateReadme(opts: {
           .map((m) => `- ${m.kind}: \`${m.name}\`${m.optional ? " (optional)" : ""}`)
           .join("\n");
   const nodeLines = nodeClasses.map((c) => `- ${c}`).join("\n");
+  const packLines =
+    manifest.requires.nodePacks.length === 0
+      ? ""
+      : manifest.requires.nodePacks
+          .map((p) => {
+            const classes =
+              (p.provides ?? []).length > 0 ? ` (${(p.provides ?? []).join(", ")})` : "";
+            return `- \`${p.id}\`${p.version ? `@${p.version}` : ""}${classes}`;
+          })
+          .join("\n");
+  const hasCustom =
+    manifest.requires.nodePacks.length > 0 || nodeClasses.some((c) => !isCoreNodeClass(c));
+  const customSection = hasCustom
+    ? [
+        "",
+        "## Custom nodes",
+        "",
+        packLines ? "Declared node packs:\n\n" + packLines + "\n" : "",
+        "Check:",
+        "",
+        "```sh",
+        `cwf inspect ${name.npmName} --url http://127.0.0.1:8188`,
+        "```",
+        "",
+        "Prepare a local Comfy installation (this installs executable Python via Comfy Registry / Manager — approval required):",
+        "",
+        "```sh",
+        `cwf setup ${name.npmName} --comfy <ComfyUI-path>`,
+        "```",
+        "",
+        "`cwf run` never installs custom nodes. Unresolved classes need `cwf node-pack map` / `cwf resolve-nodes --write`. Setup asks before installing executable Python.",
+        "",
+      ].join("\n")
+    : "";
 
   return [
     `# ${manifest.title}`,
@@ -302,6 +340,7 @@ function generateReadme(opts: {
     "",
     runExample,
     "```",
+    customSection,
     "",
     "Or from this directory after `cwf pack`:",
     "",
@@ -329,7 +368,7 @@ function generateReadme(opts: {
     'git commit -m "Initial workflow package"',
     "```",
     "",
-    "GitHub hosting is optional. npm is the package transport.",
+    "Package format is host-agnostic (npm, GitHub Packages, or a local tarball). Adjust install instructions for your publisher.",
     "",
   ].join("\n");
 }
@@ -361,7 +400,7 @@ export function generatePackage(opts: InitPackageOptions): InitPackageResult {
   };
   const files: GeneratedPackageFiles = {
     "package.json": JSON.stringify(packageJson, null, 2) + "\n",
-    "comfy.workflow.json": JSON.stringify(manifest, null, 2) + "\n",
+    "comfy.workflow.json": stringifyManifest(manifest),
     "workflow.ir.json": serializeGraph(graph, { pretty: true }) + "\n",
     "workflow.ts": emitTs(graph, { defs: opts.defs, moduleName: opts.name.workflowName }) + "\n",
     "README.md": generateReadme({ name: opts.name, manifest, nodeClasses }),

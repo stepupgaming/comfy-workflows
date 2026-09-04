@@ -15,3 +15,4 @@ export * from "./portability.js";
 export * from "./suggest.js";
 export * from "./expose.js";
 export * from "./init.js";
+export { stringifyManifest, writeManifestFile } from "./write.js";

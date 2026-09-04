@@ -23,7 +23,7 @@ Hand-edited JSON drifts: node ids shift, seeds silently exceed 2^53 and corrupt,
 - **Lossless integers**: seeds are `bigint` in memory and `{"$int": "..."}` on disk — the full 64-bit range survives every round-trip.
 - **Determinism**: the same graph plus the same defs compiles to byte-identical JSON, with a hash to prove it.
 - **Composition**: recipes and packaged templates are functions over graphs. `hiresFix(textToImage({...}))` is one valid graph, not two JSON files stapled together.
-- **Environment awareness**: a lockfile records the node universe you built against; drift is reported, never silently ignored.
+- **Environment awareness**: a lockfile records the node universe you built against; drift is reported, never silently ignored. Published workflows can declare Registry node packs and prepare a Comfy tree with one explicit `cwf setup` — [Custom-node dependencies](./custom-nodes).
 
 Official Comfy SDKs focus on API execution. Comfy Workflows focuses on workflow authoring, import, Graph IR, deterministic compilation, composition, packaging, and distribution.
 

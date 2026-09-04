@@ -32,6 +32,7 @@ export default defineConfig({
     nav: [
       { text: "Guide", link: "/guide/", activeMatch: "/guide/" },
       { text: "Packages", link: "/guide/packages", activeMatch: "/guide/packages" },
+      { text: "Custom nodes", link: "/guide/custom-nodes" },
       { text: "Convert a workflow", link: "/guide/convert-workflow" },
       { text: "Reference", link: "/reference/architecture", activeMatch: "/reference/" },
       { text: "CLI", link: "/guide/cli" },
@@ -48,6 +49,7 @@ export default defineConfig({
             { text: "Convert a workflow into a package", link: "/guide/convert-workflow" },
             { text: "Authoring workflows", link: "/guide/authoring" },
             { text: "Workflow packages", link: "/guide/packages" },
+            { text: "Custom-node dependencies", link: "/guide/custom-nodes" },
             { text: "Compile & validate", link: "/guide/compile-and-validate" },
             { text: "Runtime & execution", link: "/guide/runtime" },
             { text: "Errors", link: "/guide/errors" },

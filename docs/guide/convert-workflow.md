@@ -115,7 +115,7 @@ Each `expose` updates the IR, the manifest, and `workflow.ts` together. If anyth
 cwf pack
 ```
 
-`pack` is the publication gate: schema, IR, parameter/output coherence, node-class agreement, and embedded local paths. Warnings (empty `nodePacks`, missing keywords) do not fail the command. Errors do.
+`pack` is the publication gate: schema, IR, parameter/output coherence, node-class agreement, and embedded local paths. Warnings (`W_PACK_UNRESOLVED_NODE_PACK` for custom classes with no owning pack, missing keywords) do not fail the command. Errors do. Resolve packs with `cwf resolve-nodes . --url http://127.0.0.1:8188 --write` before you publish.
 
 ## 7. Test locally
 
@@ -138,14 +138,16 @@ cwf run . --url http://127.0.0.1:8188 \
 cwf init packaged-demo --from workflow.json --git   # git init only, if you asked
 git add .
 git commit -m "Initial workflow package"
-# gh repo create …   # optional — npm is the package transport
+	# gh repo create …   # optional
 ```
 
 ## 9. Publish
 
 ```sh
 cwf pack
-npm publish
+# Existing npm names: npm publish
+# New packages may temporarily use GitHub Packages / a GitHub Release tarball
+# while npm rate-limits new names. Package format is the same either way.
 ```
 
 You use your own npm account. There is no Comfy Workflows registry.

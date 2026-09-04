@@ -98,7 +98,8 @@ describe("manifest", () => {
   });
 
   it("rejects bad specVersion", () => {
-    expect(() => parseWorkflowManifest({ ...BASE_MANIFEST, specVersion: 2 })).toThrow(ComfyError);
+    expect(() => parseWorkflowManifest({ ...BASE_MANIFEST, specVersion: 3 })).toThrow(ComfyError);
+    expect(() => parseWorkflowManifest({ ...BASE_MANIFEST, specVersion: 0 })).toThrow(ComfyError);
   });
 
   it("rejects missing name / absolute entry", () => {

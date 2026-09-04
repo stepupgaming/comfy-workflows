@@ -27,6 +27,14 @@ const jsonOf = <T>(stdout: string): T => {
 };
 
 describe("CLI", () => {
+  it("help lists setup and resolve-nodes", async () => {
+    const { stdout, code } = await comfy(["help"]);
+    expect(code).toBe(0);
+    expect(stdout).toContain("cwf setup");
+    expect(stdout).toContain("cwf resolve-nodes");
+    expect(stdout).toContain("cwf node-pack");
+  });
+
   it("catalog finds nodes by substring", async () => {
     const { stdout, code } = await comfy(["catalog", "sampler"]);
     expect(code).toBe(0);
