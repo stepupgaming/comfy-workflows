@@ -1,0 +1,49 @@
+name: Mirror npm
+
+# Explicit, separable npmjs mirror. Never a release gate.
+# Mirrors already-packed GitHub canonical versions whose npm names exist.
+# Does not create new npm package names.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Git tag to pack and mirror (e.g. v0.2.13)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: npm install -g npm@11
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm build:packages
+      - run: node scripts/release-pack.mjs
+      - name: Best-effort npmjs mirror
+        env:
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+        run: |
+          unset NODE_AUTH_TOKEN
+          node scripts/release-mirror-npm.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-mirror-status
+          path: |
+            release-artifacts/npm-mirror.json
+            distribution/status.json
+          if-no-files-found: ignore

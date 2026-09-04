@@ -1,42 +1,51 @@
 name: Release
 
-# Publishes @stepupgaming/comfy-workflows + the first-party workflow
-# packages to the public npm registry with provenance.
+# Canonical publication is GitHub.
 #
-# Steady state: create a GitHub Release (tag vX.Y.Z matching package.json
-# versions) → this workflow verifies a clean build and publishes via npm
-# trusted publishing (OIDC, no long-lived token).
+#   GitHub Release / tag
+#     → validate
+#     → pack exact .tgz once
+#     → GitHub Packages
+#     → attach .tgz to the GitHub Release
+#     → RELEASE COMPLETE
+#     → optional npmjs mirror (must not fail this workflow)
 #
-# ONE-TIME BOOTSTRAP (npm requires it): trusted publishers can only be
-# attached to a package that already exists. Before the first OIDC publish:
-#   1. `npm login` as a @stepupgaming org admin,
-#   2. `npm publish --access public` the core package once from a clean tree,
-#   3. on npmjs.com, add a trusted publisher (this repo + this workflow)
-#      to each of the three packages,
-#   4. never commit an npm token — delete the login after bootstrapping.
+# npm is a convenience mirror. E429, auth, or registry outages are deferred.
 
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing Git tag to pack and attach artifacts to (default: v${package.json version})
+        required: false
+        type: string
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || inputs.tag || github.ref }}
+  cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
+  packages: write
   id-token: write
 
 jobs:
-  publish:
+  validate:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-          # No registry-url: that injects a dummy NODE_AUTH_TOKEN which
-          # either 404s the PUT or, once stripped, leaves npm with ENEEDAUTH.
-      # Trusted publishing + provenance need npm >= 11.5.1.
-      - run: npm install -g npm@11
       - run: pnpm install --frozen-lockfile
       - name: Never publish from a dirty tree
         run: |
@@ -52,25 +61,143 @@ jobs:
       - run: pnpm build:packages && git diff --exit-code packages/*/workflow.ir.json packages/*/comfy.workflow.json
       - run: node --import jiti/register src/cli/bin.ts pack packages/workflow-t2i
       - run: node --import jiti/register src/cli/bin.ts pack packages/workflow-hires
-      - name: Publish core + workflow packages (skip versions already on the registry)
+      - id: meta
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          if [ -z "$TAG" ]; then TAG="v$VERSION"; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "releasing $TAG (package.json $VERSION)"
+
+  pack:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm build:packages
+      - run: node scripts/release-pack.mjs
+      - run: node scripts/release-status.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-tarballs
+          path: |
+            release-artifacts/*.tgz
+            release-artifacts/manifest.json
+          if-no-files-found: error
+
+  publish-github:
+    needs: [validate, pack]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-tarballs
+          path: release-artifacts
+      - name: Publish packed tarballs to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/release-publish-github.mjs
+
+  publish-release-assets:
+    needs: [validate, pack]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-tarballs
+          path: release-artifacts
+      - name: Attach exact tarballs to the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "GitHub Release $TAG does not exist. Create the release first."
+            exit 1
+          fi
+          gh release upload "$TAG" release-artifacts/*.tgz release-artifacts/manifest.json --clobber
+          gh release view "$TAG" --json assets --jq '.assets[].name'
+
+  tarball-consumer:
+    needs: pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-tarballs
+          path: release-artifacts
+      - name: Anonymous tarball consumer
+        run: node scripts/test-release-tarball-consumer.mjs
+
+  github-packages-consumer:
+    needs: [validate, publish-github]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Authenticated GitHub Packages consumer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CWF_CORE_SPEC: "@stepupgaming/comfy-workflows@${{ needs.validate.outputs.version }}"
+        run: node scripts/test-github-packages-consumer.mjs
+
+  # Job name `publish` is preserved so an npm trusted publisher attached
+  # to this workflow keeps working. continue-on-error: npm is not a gate.
+  publish:
+    needs: [validate, pack, publish-github]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g npm@11
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-tarballs
+          path: release-artifacts
+      - name: Best-effort npmjs mirror (never a release gate)
         env:
           NPM_CONFIG_REGISTRY: https://registry.npmjs.org
         run: |
           unset NODE_AUTH_TOKEN
-          npm --version
-          node --input-type=module -e "
-            import fs from 'node:fs';
-            const rows = ['.', 'packages/workflow-t2i', 'packages/workflow-hires'].map((dir) => {
-              const p = JSON.parse(fs.readFileSync(dir + '/package.json', 'utf8'));
-              return dir + ' ' + p.name + ' ' + p.version;
-            });
-            console.log(rows.join('\n'));
-          " > pkgs.txt
-          while read -r dir name version; do
-            if npm view "$name@$version" version >/dev/null 2>&1; then
-              echo "$name@$version already published — skipping"
-            else
-              echo "publishing $name@$version with provenance"
-              (cd "$dir" && npm publish --provenance --access public)
-            fi
-          done < pkgs.txt
+          node scripts/release-mirror-npm.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-mirror-status
+          path: release-artifacts/npm-mirror.json
+          if-no-files-found: ignore

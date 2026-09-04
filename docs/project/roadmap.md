@@ -10,6 +10,7 @@
 - Workflow packages: manifest, `cwf pack` / `inspect` / `run <package>`
 - Custom-node resolve + explicit `cwf setup` (never from `run`)
 - First-party packages `@stepupgaming/comfy-workflow-t2i` and `…-hires`
+- GitHub-canonical distribution (Packages + Release tarballs); npmjs as optional mirror
 - Recipes: `textToImage`, `img2img`, `inpaint`, `outpaint`, `withLora`, `withControlNet`, `hiresFix`, `upscale`
 
 ## Near-term

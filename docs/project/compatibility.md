@@ -8,7 +8,7 @@
 
 ## Core versioning
 
-During 0.x, workflow packages declare `peerDependencies` and `coreVersion` as `^0.<minor>.0`. `^0.2.0` accepts 0.2.12 and rejects 0.3.0.
+During 0.x, workflow packages declare `peerDependencies` and `coreVersion` as `^0.<minor>.0`. `^0.2.0` accepts 0.2.13 and rejects 0.3.0.
 
 ## Manifest
 
@@ -20,7 +20,7 @@ Editor v0.4, workflow v1, API/prompt JSON.
 
 ## Migrating from the unpublished `comfy-sdk` name
 
-v0.1 was never on npm as `comfy-sdk`. The rename is mechanical:
+v0.1 was never published as `comfy-sdk`. The rename is mechanical:
 
 - package: `comfy-sdk` → `@stepupgaming/comfy-workflows`
 - CLI: do not publish a `comfy` binary. Use `cwf` / `comfy-workflows`

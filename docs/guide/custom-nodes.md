@@ -15,7 +15,7 @@ You should not have to hunt GitHub for missing custom nodes.
 
 Package format is host-agnostic. The same `inspect` / `resolve-nodes` / `setup` path works whether the tarball came from npm, GitHub Packages, a GitHub Release, or a local file. [Distribution](/product/distribution).
 
-Do **not** set a scope-wide `@stepupgaming:registry=https://npm.pkg.github.com`. That would also send the existing core package to GitHub Packages.
+A project-local `@stepupgaming:registry=https://npm.pkg.github.com` mapping is valid for authenticated installs because core and first-party workflows are all on GitHub Packages. It remaps the **entire** scope — keep it out of `~/.npmrc` unless you want that on every project. Anonymous installs use the GitHub Release `.tgz`. [Distribution](/product/distribution).
 
 ## Security contract
 

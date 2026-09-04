@@ -14,6 +14,6 @@ dist/                   # optional typed wrapper; never required to inspect
 
 Inspect reads the three JSON files. It does not execute `ir.build.ts` or `dist/`.
 
-Package **format** vs package **host**: npm, GitHub Packages, Release tarball, local path. The resolver should not care.
+Package **format** vs package **host**: GitHub Packages (canonical authenticated), GitHub Release tarball (canonical anonymous), npmjs (convenience mirror), local path. The resolver should not care.
 
 [Package guide](/migrate/package) · [Manifest](/reference/manifest) · [Distribution](/product/distribution)

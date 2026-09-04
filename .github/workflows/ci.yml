@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -27,3 +31,18 @@ jobs:
       # Core tarball must contain exactly the publishable set.
       - run: pnpm pack --dry-run
       - run: pnpm docs:check
+      # Pack-once artifacts + anonymous tarball consumer (no registry).
+      - run: node scripts/release-pack.mjs
+      - run: node scripts/test-release-tarball-consumer.mjs
+
+  github-packages-consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Authenticated GitHub Packages consumer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/test-github-packages-consumer.mjs

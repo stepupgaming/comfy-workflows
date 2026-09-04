@@ -4,7 +4,7 @@ Recipes expand into many nodes. They return template graphs. Placeholders surviv
 
 <<< @/examples-src/recipes.ts
 
-## Built-in recipes (0.2.12)
+## Built-in recipes
 
 | Recipe | What it builds |
 | ------ | -------------- |

@@ -10,3 +10,4 @@ comfy.lock.json
 tmp-inspect/
 tmp-npm-clean-install/
 tmp-parity.mjs
+release-artifacts/

@@ -18,7 +18,7 @@ pnpm docs:check
 pnpm --filter comfy-workflows-docs docs:build
 ```
 
-`docs:check` verifies CLI commands and error codes still exist in source, and that pages do not mention stale package names.
+`docs:check` verifies CLI commands and error codes still exist in source, that pages do not mention stale package names, and that distribution docs still describe GitHub as canonical.
 
 ## What not to automate
 

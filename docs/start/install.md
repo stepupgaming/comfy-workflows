@@ -10,6 +10,10 @@ You do not need Comfy running to **author** or **compile** against a saved snaps
 
 ## Install the core
 
+GitHub is the canonical host. npmjs is a convenience mirror of the same package.
+
+### Convenience (npmjs mirror)
+
 ::: code-group
 
 ```sh [pnpm]
@@ -27,6 +31,44 @@ That package is the SDK **and** the `cwf` CLI (`comfy-workflows` is the same bin
 ```sh
 npx cwf --help
 ```
+
+### Authenticated GitHub Packages
+
+GitHub Packages installs require a token with `read:packages`. Keep the mapping **project-local**.
+
+::: code-group
+
+```powershell [PowerShell]
+$env:GITHUB_PACKAGES_TOKEN = "ghp_…"
+@'
+@stepupgaming:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}
+'@ | Set-Content -Encoding utf8 .npmrc
+pnpm add @stepupgaming/comfy-workflows
+Remove-Item Env:GITHUB_PACKAGES_TOKEN
+```
+
+```sh [shell]
+export GITHUB_PACKAGES_TOKEN=ghp_…
+cat > .npmrc <<'EOF'
+@stepupgaming:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}
+EOF
+pnpm add @stepupgaming/comfy-workflows
+unset GITHUB_PACKAGES_TOKEN
+```
+
+:::
+
+### Anonymous Release tarball
+
+Download `stepupgaming-comfy-workflows-<version>.tgz` from the [GitHub Release](https://github.com/stepupgaming/comfy-workflows/releases) and:
+
+```sh
+pnpm add ./stepupgaming-comfy-workflows-0.2.13.tgz
+```
+
+No npmjs. No GitHub Packages PAT. Details: [Distribution](/product/distribution).
 
 ## Windows notes
 
@@ -48,14 +90,16 @@ Portable Windows Comfy uses `python_embeded\python.exe`. `cwf setup --comfy` loo
 
 ## First-party workflow packages
 
-These are already on npm:
+Same three hosts. Convenience mirror:
 
 ```sh
 pnpm add @stepupgaming/comfy-workflow-t2i
 pnpm add @stepupgaming/comfy-workflow-hires
 ```
 
-Other workflow packages may live on GitHub Packages or a tarball while new npm names are rate-limited. That is a **host** detail. The package **format** does not care. Do not remap the entire `@stepupgaming` scope to GitHub Packages: that would also send the core package to the wrong registry. [Distribution](/product/distribution).
+Or install the Release `.tgz`. Or install from GitHub Packages with the project-local scope mapping above.
+
+Index: [First-party packages](/product/packages).
 
 ## Next
 

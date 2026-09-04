@@ -31,23 +31,28 @@ If inspect reported missing custom nodes, run `cwf setup` first. `cwf run` will 
 
 ## Publish
 
-The **format** is host-agnostic. The **host** can be npm, GitHub Packages, a GitHub Release tarball, or a local path.
+The **format** is host-agnostic. Cut a **GitHub release**. That is the completion gate.
 
-Prefer npm when the name already exists or when new-package creation is allowed:
+1. Pack the exact `.tgz` (`npm pack`).
+2. Publish that tarball to GitHub Packages.
+3. Attach the same tarball to the GitHub Release.
+4. Optionally mirror the same tarball to npmjs.
 
-```sh
-npm publish --access public
-```
+Do not put `"publishConfig": { "registry": "https://npm.pkg.github.com" }` in `package.json`. Configure the registry at publish time so the same package remains mirrorable.
 
-Do not remap all of `@stepupgaming` to GitHub Packages. That would also pull the core SDK from the wrong registry. Safer: install core from npm, then add a GitHub Packages workflow as a tarball. [Distribution](/product/distribution).
+npmjs is optional. A new package name does not need npm to exist.
 
-## First-party packages on npm
+Authenticated consumers can map `@stepupgaming` **project-locally** to GitHub Packages. That mapping covers the whole scope — including core — which is intended once core lives on GitHub Packages. Do not set it globally unless you want that on every project. Anonymous consumers use the Release `.tgz`. [Distribution](/product/distribution).
+
+## First-party packages
 
 | Package | What it is |
 | ------- | ---------- |
 | `@stepupgaming/comfy-workflow-t2i` | Baseline text-to-image |
 | `@stepupgaming/comfy-workflow-hires` | T2I plus a latent hires pass |
 
-Both declare `peerDependencies["@stepupgaming/comfy-workflows"]` as `^0.2.0`. During 0.x, `^0.2.0` accepts 0.2.12 and rejects 0.3.0.
+Both declare `peerDependencies["@stepupgaming/comfy-workflows"]` as `^0.2.0`. During 0.x, `^0.2.0` accepts 0.2.13 and rejects 0.3.0.
 
 The repo-only helper `pnpm build:packages` regenerates those two. That is not the public authoring path. Public authors use `cwf init` / `cwf pack`.
+
+Index: [First-party packages](/product/packages).

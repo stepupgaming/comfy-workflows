@@ -29,7 +29,7 @@ features:
     link: /code/quickstart
     linkText: Code-first quickstart
   - title: Ship as packages
-    details: A workflow package is manifest + IR. Inspect and run never execute package JavaScript. Host can be npm, GitHub Packages, or a tarball.
+    details: A workflow package is manifest + IR. Inspect and run never execute package JavaScript. GitHub is the canonical host; npmjs is a convenience mirror.
     link: /migrate/package
     linkText: Packages
   - title: Custom nodes, on purpose

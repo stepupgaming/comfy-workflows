@@ -1,0 +1,41 @@
+{
+  "version": "0.2.13",
+  "generatedAt": "2026-09-04T00:00:00.000Z",
+  "canonical": {
+    "githubRelease": "https://github.com/stepupgaming/comfy-workflows/releases/tag/v0.2.13",
+    "githubPackages": true,
+    "githubPackagesRegistry": "https://npm.pkg.github.com"
+  },
+  "npmMirror": {
+    "status": "unknown"
+  },
+  "packages": [
+    {
+      "name": "@stepupgaming/comfy-workflows",
+      "version": "0.2.13",
+      "kind": "core",
+      "family": "core",
+      "canonicalHost": "github-packages",
+      "githubPackages": true,
+      "npmMirrorStatus": "unknown"
+    },
+    {
+      "name": "@stepupgaming/comfy-workflow-t2i",
+      "version": "0.2.0",
+      "kind": "workflow",
+      "family": "examples",
+      "canonicalHost": "github-packages",
+      "githubPackages": true,
+      "npmMirrorStatus": "mirrored"
+    },
+    {
+      "name": "@stepupgaming/comfy-workflow-hires",
+      "version": "0.2.0",
+      "kind": "workflow",
+      "family": "examples",
+      "canonicalHost": "github-packages",
+      "githubPackages": true,
+      "npmMirrorStatus": "mirrored"
+    }
+  ]
+}

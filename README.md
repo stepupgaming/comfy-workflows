@@ -36,10 +36,14 @@ g.add(image.SaveImage, { images: dec.IMAGE, filename_prefix: "t2i" });
 
 ## Install
 
+Convenience (npmjs mirror of the GitHub release):
+
 ```sh
 pnpm add @stepupgaming/comfy-workflows
 # or: npm install @stepupgaming/comfy-workflows
 ```
+
+Canonical hosts: [GitHub Packages](https://github.com/stepupgaming/comfy-workflows/pkgs/npm/comfy-workflows) (authenticated, `read:packages`) and [Release tarballs](https://github.com/stepupgaming/comfy-workflows/releases) (anonymous `.tgz`). npmjs is a convenience mirror, not the source of truth. [Distribution](https://stepupgaming.github.io/comfy-workflows/product/distribution).
 
 Node.js ≥ 22. The `cwf` CLI ships in the same package.
 
@@ -70,7 +74,7 @@ A Rust/Python/Go app should keep TypeScript at **build time**, ship generated IR
 
 ## Status
 
-Core `@stepupgaming/comfy-workflows` **0.2.12** is on npm. First-party examples `@stepupgaming/comfy-workflow-t2i` and `…-hires` are on npm. Workflow **format** is host-agnostic (npm, GitHub Packages, tarball).
+Core `@stepupgaming/comfy-workflows` **0.2.13**. Canonical publication is GitHub (Packages + Release tarballs). First-party examples `@stepupgaming/comfy-workflow-t2i` and `…-hires` follow the same policy. npmjs is a convenience mirror. Workflow **format** is host-agnostic.
 
 Roadmap: [docs](https://stepupgaming.github.io/comfy-workflows/project/roadmap). Design: [ARCHITECTURE.md](./ARCHITECTURE.md).
 

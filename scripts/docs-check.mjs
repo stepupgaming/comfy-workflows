@@ -68,6 +68,8 @@ const forbidden = [
   "0.2.8",
   "0.2.10",
   "0.2.11",
+  "0.2.12",
+  "## npm first",
 ];
 
 async function walk(dir) {
@@ -105,11 +107,41 @@ const requiredPages = [
   "docs/migrate/import.md",
   "docs/product/architecture.md",
   "docs/product/build-time-vs-runtime.md",
+  "docs/product/distribution.md",
+  "docs/product/packages.md",
   "docs/concepts/mental-model.md",
   "docs/reference/cli.md",
   "docs/reference/errors.md",
   "docs/guide/custom-nodes.md",
 ];
+
+try {
+  const index = await readFile(join(docsRoot, "reference", "_generated", "package-index.md"), "utf8");
+  if (!index.includes("GitHub Packages") || !index.includes("Release tarball")) {
+    fail("generated package index missing GitHub Packages / Release tarball columns");
+  }
+} catch {
+  fail("missing generated package index docs/reference/_generated/package-index.md");
+}
+
+const distPolicyNeedles = [
+  ["docs/product/distribution.md", "GitHub Packages"],
+  ["docs/product/distribution.md", "Release tarball"],
+  ["docs/product/distribution.md", "npmjs mirror"],
+  ["docs/start/install.md", "read:packages"],
+];
+for (const [file, needle] of distPolicyNeedles) {
+  const text = await readFile(join(root, file), "utf8");
+  if (!text.includes(needle)) fail(`${file} missing distribution-policy language ${JSON.stringify(needle)}`);
+}
+
+for (const file of mdFiles) {
+  const text = await readFile(file, "utf8");
+  const rel = relative(root, file).replaceAll("\\", "/");
+  if (/_authToken=[^$\s{]/.test(text) && !rel.includes("compatibility.md")) {
+    fail(`${rel} looks like a committed auth token in an npmrc example`);
+  }
+}
 for (const p of requiredPages) {
   try {
     await readFile(join(root, p));

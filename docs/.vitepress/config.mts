@@ -56,7 +56,8 @@ export default defineConfig({
       { text: `v${CORE_VERSION}`, items: [
         { text: "Changelog / roadmap", link: "/project/roadmap" },
         { text: "GitHub", link: github },
-        { text: "npm", link: "https://www.npmjs.com/package/@stepupgaming/comfy-workflows" },
+        { text: "Releases", link: `${github}/releases` },
+        { text: "npm mirror", link: "https://www.npmjs.com/package/@stepupgaming/comfy-workflows" },
       ]},
     ],
     sidebar: {
@@ -162,6 +163,7 @@ function sidebarProduct() {
         { text: "Runtime integration", link: "/product/runtime" },
         { text: "CI / drift gates", link: "/product/ci" },
         { text: "Package distribution", link: "/product/distribution" },
+        { text: "First-party packages", link: "/product/packages" },
         { text: "Custom-node setup", link: "/product/setup" },
         { text: "Security model", link: "/product/security" },
         { text: "Case study", link: "/product/case-study" },

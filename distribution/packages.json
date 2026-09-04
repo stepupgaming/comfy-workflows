@@ -1,0 +1,39 @@
+{
+  "specVersion": 1,
+  "canonicalHost": "github-packages",
+  "githubOwner": "stepupgaming",
+  "githubRepo": "comfy-workflows",
+  "githubPackagesRegistry": "https://npm.pkg.github.com",
+  "npmRegistry": "https://registry.npmjs.org",
+  "notes": [
+    "GitHub Packages + GitHub Release tarballs are canonical.",
+    "npmjs is an optional convenience mirror and is not a release gate.",
+    "Package format stays npm-compatible. Host is distribution metadata, not workflow semantics."
+  ],
+  "packages": [
+    {
+      "name": "@stepupgaming/comfy-workflows",
+      "dir": ".",
+      "kind": "core",
+      "family": "core",
+      "description": "Code-first, typed, composable workflows for ComfyUI.",
+      "npmMirrorEligible": true
+    },
+    {
+      "name": "@stepupgaming/comfy-workflow-t2i",
+      "dir": "packages/workflow-t2i",
+      "kind": "workflow",
+      "family": "examples",
+      "description": "Text-to-image Comfy workflow package (checkpoint → prompts → KSampler → decode → save).",
+      "npmMirrorEligible": true
+    },
+    {
+      "name": "@stepupgaming/comfy-workflow-hires",
+      "dir": "packages/workflow-hires",
+      "kind": "workflow",
+      "family": "examples",
+      "description": "High-resolution text-to-image Comfy workflow package (t2i base + latent hires-fix second pass).",
+      "npmMirrorEligible": true
+    }
+  ]
+}
