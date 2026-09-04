@@ -126,6 +126,8 @@ const indexMd = [
 ].join("\n");
 await writeFile(join(outDir, "package-index.md"), indexMd);
 
+await import("./agent-docs.mjs");
+
 process.stdout.write(
   `docs-gen: ${codes.length} error codes, ${commands.length} CLI commands, ${indexRows.length} packages, v${pkg.version}\n`,
 );

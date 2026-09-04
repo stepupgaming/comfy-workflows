@@ -59,6 +59,10 @@ const check = `
 const imported = await run(process.execPath, ["--input-type=module", "-e", check], { cwd: consumer, echo: true });
 if (imported.code !== 0) throw new Error(`tarball import failed\n${imported.stdout}\n${imported.stderr}`);
 
+const installedRoot = join(consumer, "node_modules", "@stepupgaming", "comfy-workflows");
+const skillMd = join(installedRoot, "skills", "comfy-workflows", "SKILL.md");
+if (!existsSync(skillMd)) throw new Error(`tarball skill missing: ${skillMd}`);
+
 const inspect = await run(
   process.execPath,
   [

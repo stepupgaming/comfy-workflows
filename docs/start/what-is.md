@@ -48,4 +48,4 @@ Details: [Mental model](/concepts/mental-model) and [What do I edit?](/start/wha
 
 ## Current core
 
-`@stepupgaming/comfy-workflows` **0.2.13**. Canonical host is GitHub (Packages + Release tarballs); npmjs is a convenience mirror. The `cwf` CLI ships in the same package (`comfy-workflows` is an alias). Node.js ≥ 22. [Install](/start/install).
+`@stepupgaming/comfy-workflows` **0.2.14**. Canonical host is GitHub (Packages + Release tarballs); npmjs is a convenience mirror. The `cwf` CLI ships in the same package (`comfy-workflows` is an alias). Node.js ≥ 22. [Install](/start/install).

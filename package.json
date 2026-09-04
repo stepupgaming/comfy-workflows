@@ -1,6 +1,6 @@
 {
   "name": "@stepupgaming/comfy-workflows",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "description": "Comfy Workflows — code-first, typed, composable workflows for ComfyUI.",
   "type": "module",
   "license": "MIT",
@@ -48,7 +48,8 @@
   },
   "files": [
     "dist",
-    "schema"
+    "schema",
+    "skills"
   ],
   "sideEffects": false,
   "keywords": [
@@ -84,6 +85,7 @@
     "codegen:core": "jiti scripts/run-codegen.mjs",
     "docs:gen": "node scripts/docs-gen.mjs",
     "docs:check": "node scripts/docs-gen.mjs && node scripts/docs-check.mjs && tsc --noEmit -p docs/examples-src/tsconfig.json && node scripts/docs-examples.mjs",
+    "agent:check": "node scripts/docs-gen.mjs && node scripts/agent-check.mjs",
     "docs:dev": "pnpm docs:gen && pnpm --filter comfy-workflows-docs docs:dev",
     "docs:build": "pnpm docs:gen && pnpm --filter comfy-workflows-docs docs:build",
     "format": "prettier --write .",

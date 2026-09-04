@@ -37,6 +37,14 @@
   --vp-sidebar-bg-color: var(--vp-c-bg);
 }
 
+.md-source-link {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+}
+.md-source-link a {
+  color: var(--vp-c-brand-1);
+}
+
 .VPFeatures .items .item .VPFeature {
   border-top: 1px solid var(--vp-c-divider);
   border-left: 3px solid transparent;

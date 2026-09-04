@@ -51,7 +51,7 @@ Authenticated consumers can map `@stepupgaming` **project-locally** to GitHub Pa
 | `@stepupgaming/comfy-workflow-t2i` | Baseline text-to-image |
 | `@stepupgaming/comfy-workflow-hires` | T2I plus a latent hires pass |
 
-Both declare `peerDependencies["@stepupgaming/comfy-workflows"]` as `^0.2.0`. During 0.x, `^0.2.0` accepts 0.2.13 and rejects 0.3.0.
+Both declare `peerDependencies["@stepupgaming/comfy-workflows"]` as `^0.2.0`. During 0.x, `^0.2.0` accepts 0.2.x and rejects 0.3.0.
 
 The repo-only helper `pnpm build:packages` regenerates those two. That is not the public authoring path. Public authors use `cwf init` / `cwf pack`.
 

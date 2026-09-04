@@ -1,0 +1,183 @@
+{
+  "name": "comfy-workflows",
+  "package": "@stepupgaming/comfy-workflows",
+  "version": "0.2.14",
+  "unofficial": true,
+  "skill": {
+    "packagePath": "skills/comfy-workflows/SKILL.md",
+    "repo": "https://github.com/stepupgaming/comfy-workflows/blob/v0.2.14/skills/comfy-workflows/SKILL.md",
+    "raw": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/skills/comfy-workflows/SKILL.md"
+  },
+  "agentsMd": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/AGENTS.md",
+  "llms": "https://stepupgaming.github.io/comfy-workflows/llms.txt",
+  "llmsFull": "https://stepupgaming.github.io/comfy-workflows/llms-full.txt",
+  "docs": "https://stepupgaming.github.io/comfy-workflows/",
+  "github": "https://github.com/stepupgaming/comfy-workflows",
+  "docLinkPolicy": "Skill references shipped in the npm-compatible tarball are the version-accurate operating manual. Deep human-doc links from an installed skill use raw GitHub at tag v{version}. The live llms.txt on GitHub Pages tracks main, which matches the deployed docs site.",
+  "canonicalHost": "github-packages",
+  "npmMirror": "optional",
+  "topics": {
+    "mental-model": {
+      "title": "Mental model",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/concepts/mental-model.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/concepts/mental-model.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/concepts/mental-model"
+    },
+    "what-do-i-edit": {
+      "title": "What do I edit?",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/start/what-do-i-edit.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/start/what-do-i-edit.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/start/what-do-i-edit"
+    },
+    "choose-your-path": {
+      "title": "Choose your path",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/start/choose-your-path.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/start/choose-your-path.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/start/choose-your-path"
+    },
+    "what-is": {
+      "title": "What is Comfy Workflows?",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/start/what-is.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/start/what-is.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/start/what-is"
+    },
+    "quickstart": {
+      "title": "Code-first quickstart",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/code/quickstart.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/code/quickstart.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/code/quickstart"
+    },
+    "codegen": {
+      "title": "Typed node codegen",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/code/codegen.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/code/codegen.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/code/codegen"
+    },
+    "build-a-graph": {
+      "title": "Author a graph",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/code/build-a-graph.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/code/build-a-graph.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/code/build-a-graph"
+    },
+    "parameters": {
+      "title": "Parameters",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/code/parameters.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/code/parameters.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/code/parameters"
+    },
+    "connections": {
+      "title": "Connections",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/code/connections.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/code/connections.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/code/connections"
+    },
+    "composition": {
+      "title": "Composition",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/code/composition.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/code/composition.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/code/composition"
+    },
+    "recipes": {
+      "title": "Recipes",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/code/recipes.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/code/recipes.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/code/recipes"
+    },
+    "import": {
+      "title": "Import existing JSON",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/migrate/import.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/migrate/import.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/migrate/import"
+    },
+    "custom-nodes": {
+      "title": "Custom nodes",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/guide/custom-nodes.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/guide/custom-nodes.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/guide/custom-nodes"
+    },
+    "escape-hatches": {
+      "title": "rawNode / unsafe",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/code/escape-hatches.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/code/escape-hatches.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/code/escape-hatches"
+    },
+    "architecture": {
+      "title": "Product architecture",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/product/architecture.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/product/architecture.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/product/architecture"
+    },
+    "build-time-vs-runtime": {
+      "title": "Build-time vs runtime",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/product/build-time-vs-runtime.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/product/build-time-vs-runtime.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/product/build-time-vs-runtime"
+    },
+    "no-second-compiler": {
+      "title": "No second compiler",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/concepts/no-second-compiler.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/concepts/no-second-compiler.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/concepts/no-second-compiler"
+    },
+    "packages": {
+      "title": "Packages",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/concepts/packages.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/concepts/packages.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/concepts/packages"
+    },
+    "distribution": {
+      "title": "Distribution",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/product/distribution.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/product/distribution.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/product/distribution"
+    },
+    "security": {
+      "title": "Security",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/product/security.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/product/security.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/product/security"
+    },
+    "cli": {
+      "title": "CLI",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/reference/cli.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/reference/cli.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/reference/cli"
+    },
+    "errors": {
+      "title": "Error codes",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/reference/errors.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/reference/errors.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/reference/errors"
+    },
+    "api": {
+      "title": "Public API",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/reference/api/index.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/reference/api/index.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/reference/api/"
+    },
+    "graph-ir": {
+      "title": "Graph IR",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/concepts/graph-ir.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/concepts/graph-ir.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/concepts/graph-ir"
+    },
+    "lossless-integers": {
+      "title": "Lossless integers",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/concepts/lossless-integers.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/concepts/lossless-integers.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/concepts/lossless-integers"
+    },
+    "agents": {
+      "title": "Coding agents",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/guide/agents.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/guide/agents.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/guide/agents"
+    },
+    "manifest": {
+      "title": "Manifest",
+      "markdown": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/reference/manifest.md",
+      "markdownAtTag": "https://raw.githubusercontent.com/stepupgaming/comfy-workflows/v0.2.14/docs/reference/manifest.md",
+      "html": "https://stepupgaming.github.io/comfy-workflows/reference/manifest"
+    }
+  }
+}

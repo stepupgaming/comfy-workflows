@@ -57,6 +57,7 @@ jobs:
       - run: pnpm build
       - run: pnpm test
       - run: pnpm test:packed-consumer
+      - run: pnpm agent:check
       - run: pnpm codegen:core && git diff --exit-code src/nodes/gen
       - run: pnpm build:packages && git diff --exit-code packages/*/workflow.ir.json packages/*/comfy.workflow.json
       - run: node --import jiti/register src/cli/bin.ts pack packages/workflow-t2i

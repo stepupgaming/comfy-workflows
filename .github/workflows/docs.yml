@@ -12,8 +12,11 @@ on:
       - "ARCHITECTURE.md"
       - "src/nodes/gen/**"
       - "scripts/docs-*.mjs"
+      - "scripts/agent-*.mjs"
       - "package.json"
       - "distribution/**"
+      - "skills/**"
+      - "AGENTS.md"
   workflow_dispatch:
 
 # Allow the deployment to succeed without blocking on overlapping runs.
@@ -43,6 +46,11 @@ jobs:
         run: pnpm docs:check
       - name: Build docs site
         run: pnpm --filter comfy-workflows-docs docs:build
+      - name: Agent discovery files in Pages artifact
+        run: |
+          test -f docs/.vitepress/dist/llms.txt
+          test -f docs/.vitepress/dist/llms-full.txt
+          test -f docs/.vitepress/dist/agent-index.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

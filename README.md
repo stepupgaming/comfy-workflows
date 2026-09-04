@@ -8,6 +8,8 @@ Author graphs in TypeScript, or import JSON you already have. Graph IR is the st
 
 Docs: https://stepupgaming.github.io/comfy-workflows/
 
+Coding agents: [AGENTS.md](./AGENTS.md) (this repo) · skill `skills/comfy-workflows/SKILL.md` (also inside the installed package) · [llms.txt](https://stepupgaming.github.io/comfy-workflows/llms.txt)
+
 ```ts
 import { workflow } from "@stepupgaming/comfy-workflows";
 import { conditioning, image, latent, loaders, sampling } from "@stepupgaming/comfy-workflows/nodes";
@@ -74,7 +76,7 @@ A Rust/Python/Go app should keep TypeScript at **build time**, ship generated IR
 
 ## Status
 
-Core `@stepupgaming/comfy-workflows` **0.2.13**. Canonical publication is GitHub (Packages + Release tarballs). First-party examples `@stepupgaming/comfy-workflow-t2i` and `…-hires` follow the same policy. npmjs is a convenience mirror. Workflow **format** is host-agnostic.
+Core `@stepupgaming/comfy-workflows` **0.2.14**. Canonical publication is GitHub (Packages + Release tarballs). First-party examples `@stepupgaming/comfy-workflow-t2i` and `…-hires` follow the same policy. npmjs is a convenience mirror. Workflow **format** is host-agnostic.
 
 Roadmap: [docs](https://stepupgaming.github.io/comfy-workflows/project/roadmap). Design: [ARCHITECTURE.md](./ARCHITECTURE.md).
 
@@ -86,6 +88,7 @@ pnpm test
 pnpm typecheck
 pnpm build
 pnpm docs:check
+pnpm agent:check
 ```
 
 Live integration tests run only when `COMFY_URL` points at a running ComfyUI.

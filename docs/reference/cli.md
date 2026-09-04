@@ -2,6 +2,22 @@
 
 The `cwf` CLI (`comfy-workflows` is an alias) mirrors the SDK. JSON on stdout when useful; **every error is JSON on stderr**.
 
+## Agent-safe usage
+
+Prefer read-only JSON before anything that installs Python:
+
+```sh
+cwf inspect --json
+cwf setup --dry-run --json
+cwf suggest --json
+cwf pack --json
+cwf resolve-nodes --json
+```
+
+`--json` is supported on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, and `node-pack`. Success JSON goes to **stdout**. Failures are `{ "error": { "code": "E_…", … } }` on **stderr** and a non-zero exit.
+
+Do not run `cwf setup --yes` unless the user named a Comfy directory and asked to install. `inspect`, `explain`, and `catalog` do not guess and do not execute package JavaScript. `run` never installs Python. Compile is deterministic.
+
 This help text is generated from `src/cli/cli.ts` (`pnpm docs:gen`). If a command is missing here, `docs:check` fails.
 
 <!--@include: ./_generated/cli-help.md-->

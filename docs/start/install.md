@@ -65,7 +65,7 @@ unset GITHUB_PACKAGES_TOKEN
 Download `stepupgaming-comfy-workflows-<version>.tgz` from the [GitHub Release](https://github.com/stepupgaming/comfy-workflows/releases) and:
 
 ```sh
-pnpm add ./stepupgaming-comfy-workflows-0.2.13.tgz
+pnpm add ./stepupgaming-comfy-workflows-<version>.tgz
 ```
 
 No npmjs. No GitHub Packages PAT. Details: [Distribution](/product/distribution).

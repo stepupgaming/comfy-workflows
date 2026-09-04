@@ -8,7 +8,7 @@
  * Not a Vitest worker. CI and release.yml run this after build/tests.
  */
 import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -135,15 +135,18 @@ for (const name of ["cwf", "comfy-workflows"]) {
   if (!path) throw new Error(`missing installed shim ${name} under ${binDir}`);
 }
 
-const binJs = join(
-  consumer,
-  "node_modules",
-  "@stepupgaming",
-  "comfy-workflows",
-  "dist",
-  "cli",
-  "bin.js",
-);
+const installedRoot = join(consumer, "node_modules", "@stepupgaming", "comfy-workflows");
+const skillMd = join(installedRoot, "skills", "comfy-workflows", "SKILL.md");
+if (!existsSync(skillMd)) throw new Error(`packed skill missing: ${skillMd}`);
+const skillBody = readFileSync(skillMd, "utf8");
+for (const needle of ["Graph IR", "ir.build.ts", "rawNode", "Do not reimplement"]) {
+  if (!skillBody.includes(needle)) throw new Error(`packed SKILL.md missing ${needle}`);
+}
+if (!existsSync(join(installedRoot, "skills", "comfy-workflows", "references", "code-first.md"))) {
+  throw new Error("packed skill references missing");
+}
+
+const binJs = join(installedRoot, "dist", "cli", "bin.js");
 const help = await run(process.execPath, [binJs, "--help"], { cwd: consumer, echo: true });
 if (help.code !== 0) throw new Error(`cwf --help failed\n${help.stderr}`);
 for (const needle of ["setup", "resolve-nodes"]) {

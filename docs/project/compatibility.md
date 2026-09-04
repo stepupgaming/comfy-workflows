@@ -8,7 +8,7 @@
 
 ## Core versioning
 
-During 0.x, workflow packages declare `peerDependencies` and `coreVersion` as `^0.<minor>.0`. `^0.2.0` accepts 0.2.13 and rejects 0.3.0.
+During 0.x, workflow packages declare `peerDependencies` and `coreVersion` as `^0.<minor>.0`. `^0.2.0` accepts 0.2.x and rejects 0.3.0.
 
 ## Manifest
 

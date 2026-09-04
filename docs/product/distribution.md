@@ -93,7 +93,7 @@ No npmjs. No GitHub Packages PAT.
 Download the exact `.tgz` from the [GitHub Release](https://github.com/stepupgaming/comfy-workflows/releases) and install it:
 
 ```sh
-pnpm add ./stepupgaming-comfy-workflows-0.2.13.tgz
+pnpm add ./stepupgaming-comfy-workflows-<version>.tgz
 pnpm add ./stepupgaming-comfy-workflow-t2i-0.2.0.tgz
 ```
 

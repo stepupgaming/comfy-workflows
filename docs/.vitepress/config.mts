@@ -11,7 +11,11 @@ export default defineConfig({
     "Code-first, typed, composable workflows for ComfyUI. Author in TypeScript, compile to Graph IR, run anywhere Comfy runs.",
   base: "/comfy-workflows/",
   lastUpdated: true,
-  ignoreDeadLinks: false,
+  ignoreDeadLinks: [
+    /\/llms\.txt$/,
+    /\/llms-full\.txt$/,
+    /\/agent-index\.json$/,
+  ],
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/comfy-workflows/favicon.svg" }],
     ["meta", { name: "theme-color", content: "#14161b" }],
@@ -26,6 +30,21 @@ export default defineConfig({
     ["meta", { property: "og:type", content: "website" }],
     ["meta", { property: "og:url", content: site }],
   ],
+
+  transformHead({ pageData }) {
+    const rel = pageData.relativePath;
+    if (!rel || !rel.endsWith(".md")) return [];
+    return [
+      [
+        "link",
+        {
+          rel: "alternate",
+          type: "text/markdown",
+          href: `https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/docs/${rel}`,
+        },
+      ],
+    ];
+  },
 
   themeConfig: {
     logo: "/comfy-workflows/favicon.svg",
@@ -205,7 +224,7 @@ function sidebarGuides() {
         { text: "Updating Comfy", link: "/guide/updating-comfy" },
         { text: "Windows", link: "/guide/windows" },
         { text: "Models", link: "/guide/models" },
-        { text: "Agent-friendly CLI", link: "/guide/agents" },
+        { text: "Coding agents", link: "/guide/agents" },
         { text: "Custom node development vs consumption", link: "/guide/consume-vs-author-nodes" },
       ],
     },

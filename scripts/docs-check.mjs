@@ -69,6 +69,7 @@ const forbidden = [
   "0.2.10",
   "0.2.11",
   "0.2.12",
+  "0.2.13",
   "## npm first",
 ];
 
@@ -113,6 +114,7 @@ const requiredPages = [
   "docs/reference/cli.md",
   "docs/reference/errors.md",
   "docs/guide/custom-nodes.md",
+  "docs/guide/agents.md",
 ];
 
 try {

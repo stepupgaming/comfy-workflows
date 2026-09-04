@@ -31,6 +31,7 @@ jobs:
       # Core tarball must contain exactly the publishable set.
       - run: pnpm pack --dry-run
       - run: pnpm docs:check
+      - run: pnpm agent:check
       # Pack-once artifacts + anonymous tarball consumer (no registry).
       - run: node scripts/release-pack.mjs
       - run: node scripts/test-release-tarball-consumer.mjs
