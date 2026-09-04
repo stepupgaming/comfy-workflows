@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing Git tag to pack and attach artifacts to (default: v${package.json version})
+        description: "Existing Git tag to pack and attach artifacts to (default: the package.json version)"
         required: false
         type: string
 
