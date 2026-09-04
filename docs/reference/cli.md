@@ -14,7 +14,16 @@ cwf pack --json
 cwf resolve-nodes --json
 ```
 
-`--json` is supported on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, and `node-pack`. Success JSON goes to **stdout**. Failures are `{ "error": { "code": "E_…", … } }` on **stderr** and a non-zero exit.
+### `cwf agent`
+
+```
+cwf agent install [--project dir] [--force] [--json]
+cwf agent check [--project dir] [--json]
+```
+
+Copies the bundled skill from the **installed** package into `<project>/.agents/skills/comfy-workflows/`. No network. No symlinks. `--force` is required if the destination has local edits. `check` reports `missing` / `current` / `outdated` / `modified`. Default project is the current working directory.
+
+`--json` is supported on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, `node-pack`, and `agent`. Success JSON goes to **stdout**. Failures are `{ "error": { "code": "E_…", … } }` on **stderr** and a non-zero exit.
 
 Do not run `cwf setup --yes` unless the user named a Comfy directory and asked to install. `inspect`, `explain`, and `catalog` do not guess and do not execute package JavaScript. `run` never installs Python. Compile is deterministic.
 

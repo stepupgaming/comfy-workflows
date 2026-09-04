@@ -1,6 +1,6 @@
 {
-  "version": "0.2.14",
-  "generatedAt": "2026-09-04T18:24:07.242Z",
+  "version": "0.2.15",
+  "generatedAt": "2026-09-04T19:35:42.468Z",
   "errorCodes": [
     "E_UNKNOWN_NODE_TYPE",
     "E_MISSING_INPUT",
@@ -30,7 +30,9 @@
     "E_COMFY_PYTHON_UNKNOWN",
     "E_SETUP_DECLINED",
     "E_SETUP_NOT_APPLICABLE",
-    "E_SETUP_FAILED"
+    "E_SETUP_FAILED",
+    "E_AGENT_SKILL_MISSING",
+    "E_AGENT_SKILL_MODIFIED"
   ],
   "cliCommands": [
     "import",
@@ -49,6 +51,7 @@
     "node-pack",
     "setup",
     "explain",
-    "catalog"
+    "catalog",
+    "agent"
   ]
 }

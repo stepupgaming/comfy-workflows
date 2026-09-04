@@ -1,6 +1,6 @@
 {
   "name": "@stepupgaming/comfy-workflows",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "description": "Comfy Workflows — code-first, typed, composable workflows for ComfyUI.",
   "type": "module",
   "license": "MIT",

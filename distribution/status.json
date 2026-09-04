@@ -1,8 +1,8 @@
 {
-  "version": "0.2.14",
+  "version": "0.2.15",
   "generatedAt": "2026-09-04T00:00:00.000Z",
   "canonical": {
-    "githubRelease": "https://github.com/stepupgaming/comfy-workflows/releases/tag/v0.2.14",
+    "githubRelease": "https://github.com/stepupgaming/comfy-workflows/releases/tag/v0.2.15",
     "githubPackages": true,
     "githubPackagesRegistry": "https://npm.pkg.github.com"
   },
@@ -12,7 +12,7 @@
   "packages": [
     {
       "name": "@stepupgaming/comfy-workflows",
-      "version": "0.2.14",
+      "version": "0.2.15",
       "kind": "core",
       "family": "core",
       "canonicalHost": "github-packages",

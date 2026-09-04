@@ -8,7 +8,7 @@ Author graphs in TypeScript, or import JSON you already have. Graph IR is the st
 
 Docs: https://stepupgaming.github.io/comfy-workflows/
 
-Coding agents: [AGENTS.md](./AGENTS.md) (this repo) · skill `skills/comfy-workflows/SKILL.md` (also inside the installed package) · [llms.txt](https://stepupgaming.github.io/comfy-workflows/llms.txt)
+Coding agents: [AGENTS.md](./AGENTS.md) (this repo) · skill `skills/comfy-workflows/SKILL.md` (also inside the installed package) · in a consumer project, `cwf agent install` copies it to `.agents/skills/comfy-workflows/` · [llms.txt](https://stepupgaming.github.io/comfy-workflows/llms.txt)
 
 ```ts
 import { workflow } from "@stepupgaming/comfy-workflows";
@@ -76,7 +76,7 @@ A Rust/Python/Go app should keep TypeScript at **build time**, ship generated IR
 
 ## Status
 
-Core `@stepupgaming/comfy-workflows` **0.2.14**. Canonical publication is GitHub (Packages + Release tarballs). First-party examples `@stepupgaming/comfy-workflow-t2i` and `…-hires` follow the same policy. npmjs is a convenience mirror. Workflow **format** is host-agnostic.
+Core `@stepupgaming/comfy-workflows` **0.2.15**. Canonical publication is GitHub (Packages + Release tarballs). First-party examples `@stepupgaming/comfy-workflow-t2i` and `…-hires` follow the same policy. npmjs is a convenience mirror. Workflow **format** is host-agnostic.
 
 Roadmap: [docs](https://stepupgaming.github.io/comfy-workflows/project/roadmap). Design: [ARCHITECTURE.md](./ARCHITECTURE.md).
 

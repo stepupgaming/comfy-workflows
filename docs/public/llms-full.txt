@@ -1,4 +1,4 @@
-# Comfy Workflows — agent digestGenerated from canonical docs for @stepupgaming/comfy-workflows@0.2.14.Not a dump of the entire site. Prefer SKILL.md + a single reference when possible.
+# Comfy Workflows — agent digestGenerated from canonical docs for @stepupgaming/comfy-workflows@0.2.15.Not a dump of the entire site. Prefer SKILL.md + a single reference when possible.
 
 ---
 
@@ -1303,7 +1303,16 @@ cwf pack --json
 cwf resolve-nodes --json
 ```
 
-`--json` is supported on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, and `node-pack`. Success JSON goes to **stdout**. Failures are `{ "error": { "code": "E_…", … } }` on **stderr** and a non-zero exit.
+### `cwf agent`
+
+```
+cwf agent install [--project dir] [--force] [--json]
+cwf agent check [--project dir] [--json]
+```
+
+Copies the bundled skill from the **installed** package into `<project>/.agents/skills/comfy-workflows/`. No network. No symlinks. `--force` is required if the destination has local edits. `check` reports `missing` / `current` / `outdated` / `modified`. Default project is the current working directory.
+
+`--json` is supported on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, `node-pack`, and `agent`. Success JSON goes to **stdout**. Failures are `{ "error": { "code": "E_…", … } }` on **stderr** and a non-zero exit.
 
 Do not run `cwf setup --yes` unless the user named a Comfy directory and asked to install. `inspect`, `explain`, and `catalog` do not guess and do not execute package JavaScript. `run` never installs Python. Compile is deterministic.
 
@@ -1332,6 +1341,8 @@ cwf — code-first, typed, composable workflows for ComfyUI
   cwf setup <package-or-path> --comfy <Comfy-path> [--yes] [--dry-run] [--json]
   cwf explain <file | workflow.ts>   # what does this expand into?
   cwf catalog [query] [--from catalog.json]
+  cwf agent install [--project dir] [--force] [--json]  # copy bundled skill to .agents/skills
+  cwf agent check [--project dir] [--json]              # project skill vs installed package
 ```
 
 
@@ -1423,6 +1434,8 @@ Generated from `src/errors.ts`. Meanings below are the source comments.
 | `E_SETUP_DECLINED` | User declined the setup plan (or non-interactive without --yes). |
 | `E_SETUP_NOT_APPLICABLE` | Setup cannot be applied (remote URL, missing Comfy path, missing installer). |
 | `E_SETUP_FAILED` | Official installer returned a failure. |
+| `E_AGENT_SKILL_MISSING` | Bundled skill is missing from the installed package. |
+| `E_AGENT_SKILL_MODIFIED` | Project skill copy has local edits; --force required to overwrite. |
 
 
 ## CLI envelope codes (not in `ErrorCodes`)
@@ -1544,6 +1557,17 @@ After `pnpm add @stepupgaming/comfy-workflows` the tarball contains:
 skills/comfy-workflows/SKILL.md
 skills/comfy-workflows/references/
 ```
+
+Compatible Agent Skills clients look in `.agents/skills/`, not `node_modules`. Copy the bundled skill into the project:
+
+```sh
+cwf agent install
+cwf agent check --json
+```
+
+That writes `.agents/skills/comfy-workflows/` from the **installed** package (same version as the SDK). Rerun after upgrading the core. Local edits are not overwritten unless you pass `--force`. There is no `postinstall` hook. This does not mutate `AGENTS.md`.
+
+Some clients also have their own skill directories. The portable project location this command uses is `.agents/skills/`.
 
 The skill teaches: edit TypeScript not generated IR, codegen for custom nodes, `rawNode` as escape hatch, no second compiler, explicit `cwf setup`, GitHub-canonical distribution.
 

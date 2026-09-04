@@ -21,6 +21,8 @@ node_modules/@stepupgaming/comfy-workflows/skills/comfy-workflows/SKILL.md
 
 You do not need to clone the repository to use it.
 
+If you are reading this from `node_modules` rather than a project skill, run `cwf agent install` so compatible agents can discover it at `.agents/skills/comfy-workflows/`. That copies this versioned bundle. It does not fetch the network.
+
 Versioned deep-doc links for **this package version** are in `references/_links.md`. Prefer those over the live docs site so you do not follow newer APIs than the installed SDK.
 
 ## Choose the task

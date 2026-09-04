@@ -149,10 +149,44 @@ if (!existsSync(join(installedRoot, "skills", "comfy-workflows", "references", "
 const binJs = join(installedRoot, "dist", "cli", "bin.js");
 const help = await run(process.execPath, [binJs, "--help"], { cwd: consumer, echo: true });
 if (help.code !== 0) throw new Error(`cwf --help failed\n${help.stderr}`);
-for (const needle of ["setup", "resolve-nodes"]) {
+for (const needle of ["setup", "resolve-nodes", "agent install"]) {
   if (!help.stdout.includes(needle)) {
     throw new Error(`cwf --help missing ${needle}\n${help.stdout}`);
   }
+}
+
+const agentInstall = await run(process.execPath, [binJs, "agent", "install", "--json"], {
+  cwd: consumer,
+  echo: true,
+});
+if (agentInstall.code !== 0) {
+  throw new Error(`cwf agent install failed\n${agentInstall.stdout}\n${agentInstall.stderr}`);
+}
+const projectSkill = join(consumer, ".agents", "skills", "comfy-workflows", "SKILL.md");
+if (!existsSync(projectSkill)) throw new Error(`project skill missing: ${projectSkill}`);
+if (!existsSync(join(consumer, ".agents", "skills", "comfy-workflows", "references", "code-first.md"))) {
+  throw new Error("project skill references missing");
+}
+const projectSkillBody = readFileSync(projectSkill, "utf8");
+if (!/^name:\s*comfy-workflows\s*$/m.test(projectSkillBody)) {
+  throw new Error("installed project skill frontmatter name is not comfy-workflows");
+}
+
+const agentCheck = await run(process.execPath, [binJs, "agent", "check", "--json"], {
+  cwd: consumer,
+  echo: true,
+});
+if (agentCheck.code !== 0) {
+  throw new Error(`cwf agent check failed\n${agentCheck.stdout}\n${agentCheck.stderr}`);
+}
+const checkJson = JSON.parse(agentCheck.stdout.slice(agentCheck.stdout.indexOf("{")));
+if (checkJson.status !== "current") {
+  throw new Error(`agent check status ${checkJson.status}, expected current`);
+}
+if (checkJson.installed !== true) throw new Error("agent check installed !== true");
+const pkgVersion = JSON.parse(readFileSync(join(installedRoot, "package.json"), "utf8")).version;
+if (checkJson.coreVersion !== pkgVersion) {
+  throw new Error(`agent check coreVersion ${checkJson.coreVersion} != ${pkgVersion}`);
 }
 
 console.log("packed-consumer acceptance OK");

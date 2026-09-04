@@ -22,9 +22,11 @@ cwf node-pack add <registry-id> --provides ClassA,ClassB [--dir pkg]
 cwf setup <package-or-path> --comfy <Comfy-path> [--yes] [--dry-run] [--json]
 cwf explain <file | workflow.ts>
 cwf catalog [query] [--from catalog.json]
+cwf agent install [--project dir] [--force] [--json]
+cwf agent check [--project dir] [--json]
 ```
 
-`--json` is supported on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, and `node-pack`.
+`--json` is supported on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, `node-pack`, and `agent`.
 
 `compile` / `validate` / `run` accept `workflow.ts`, `.ir.json`, and Comfy JSON. `--param` / `-p` is repeatable. `validate` never queues. `run` never installs Python.
 

@@ -2,7 +2,7 @@
 
 Code-first TypeScript SDK and `cwf` CLI for ComfyUI. Author graphs in TypeScript (or import JSON), compile them through Graph IR with the official compiler, and run them on ComfyUI. Unofficial project. Not affiliated with or endorsed by Comfy Org.
 
-Core package: @stepupgaming/comfy-workflows@0.2.14
+Core package: @stepupgaming/comfy-workflows@0.2.15
 Human docs: https://stepupgaming.github.io/comfy-workflows/
 Skill (in the installed package): skills/comfy-workflows/SKILL.md
 Repo instructions (contributors): https://raw.githubusercontent.com/stepupgaming/comfy-workflows/main/AGENTS.md
@@ -19,7 +19,7 @@ Repo instructions (contributors): https://raw.githubusercontent.com/stepupgaming
 - Seeds use bigint / `{"$int":"..."}`. Do not round integers past 2^53 through JS `Number`.
 
 Prefer these raw Markdown URLs over scraping rendered HTML.
-Installed-package skills should use the matching git tag `v0.2.14` (see skill `references/_links.md`). The live site index below tracks `main`.
+Installed-package skills should use the matching git tag `v0.2.15` (see skill `references/_links.md`). The live site index below tracks `main`.
 
 ## Start
 

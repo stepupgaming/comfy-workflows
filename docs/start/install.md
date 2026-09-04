@@ -32,6 +32,14 @@ That package is the SDK **and** the `cwf` CLI (`comfy-workflows` is the same bin
 npx cwf --help
 ```
 
+Using a coding agent?
+
+```sh
+cwf agent install
+```
+
+That copies the version-matched skill from the installed package into `.agents/skills/comfy-workflows/` so compatible agents can discover it without searching `node_modules` or scraping the docs site. Rerun after upgrading the core. Details: [Coding agents](/guide/agents).
+
 ### Authenticated GitHub Packages
 
 GitHub Packages installs require a token with `read:packages`. Keep the mapping **project-local**.

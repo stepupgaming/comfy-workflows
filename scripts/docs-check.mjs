@@ -41,6 +41,7 @@ const requiredCommands = [
   "setup",
   "explain",
   "catalog",
+  "agent",
 ];
 for (const cmd of requiredCommands) {
   if (!catalog.cliCommands.includes(cmd)) fail(`CLI command missing from generated help: ${cmd}`);
@@ -56,6 +57,8 @@ const requiredCodes = [
   "E_NODE_PACK_UNKNOWN",
   "E_NODE_PACK_VERSION_UNSATISFIED",
   "E_COMFY_PYTHON_UNKNOWN",
+  "E_AGENT_SKILL_MISSING",
+  "E_AGENT_SKILL_MODIFIED",
 ];
 for (const code of requiredCodes) {
   if (!catalog.errorCodes.includes(code)) fail(`error code missing from source: ${code}`);
@@ -70,6 +73,7 @@ const forbidden = [
   "0.2.11",
   "0.2.12",
   "0.2.13",
+  "0.2.14",
   "## npm first",
 ];
 

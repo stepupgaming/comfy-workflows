@@ -50,6 +50,7 @@ import {
 import { createInterface } from "node:readline";
 import type { EmitterRegistry } from "../emit-ts/emit.js";
 import { parseJsonLossless } from "../lossless-parse.js";
+import { inspectAgentSkill, installAgentSkill } from "./agent-skill.js";
 
 /**
  * `cwf` CLI — the scriptable surface for agents:
@@ -170,6 +171,8 @@ export async function cli(argv: string[]): Promise<number> {
         return await cmdCatalog(positional, flags);
       case "explain":
         return await cmdExplain(positional, flags);
+      case "agent":
+        return await cmdAgent(positional, flags);
       case "help":
       case "--help":
       case "-h":
@@ -210,6 +213,8 @@ function printHelp(): void {
       "  cwf setup <package-or-path> --comfy <Comfy-path> [--yes] [--dry-run] [--json]",
       "  cwf explain <file | workflow.ts>   # what does this expand into?",
       "  cwf catalog [query] [--from catalog.json]",
+      "  cwf agent install [--project dir] [--force] [--json]  # copy bundled skill to .agents/skills",
+      "  cwf agent check [--project dir] [--json]              # project skill vs installed package",
       "",
     ].join("\n"),
   );
@@ -1728,4 +1733,57 @@ async function cmdCatalog(
       .join("\n") + (hits.length > 0 ? "\n" : ""),
   );
   return 0;
+}
+
+async function cmdAgent(
+  positional: string[],
+  flags: Record<string, string | boolean | string[]>,
+): Promise<number> {
+  const sub = positional[0];
+  const projectRoot = flag(flags, "project") ?? process.cwd();
+  const asJson = flags["json"] === true;
+  if (sub === "install") {
+    const report = installAgentSkill({
+      projectRoot,
+      pkgRoot: PKG_ROOT,
+      force: flags["force"] === true,
+    });
+    if (asJson) {
+      process.stdout.write(JSON.stringify({ ok: true, ...report }, null, 2) + "\n");
+      return 0;
+    }
+    const verb =
+      report.action === "unchanged"
+        ? "current"
+        : report.action === "updated"
+          ? "updated"
+          : report.action === "forced"
+            ? "replaced"
+            : "installed";
+    process.stdout.write(
+      `skill ${verb}: ${report.destination}\n` +
+        `package ${report.coreVersion}  status ${report.status}\n`,
+    );
+    return 0;
+  }
+  if (sub === "check" || sub === "status") {
+    const report = inspectAgentSkill({ projectRoot, pkgRoot: PKG_ROOT });
+    if (asJson) {
+      process.stdout.write(JSON.stringify({ ok: true, ...report }, null, 2) + "\n");
+      return 0;
+    }
+    process.stdout.write(
+      [
+        `skill: ${report.skill}`,
+        `core: ${report.coreVersion}`,
+        `installed: ${report.installed ? "yes" : "no"}`,
+        `installedVersion: ${report.installedVersion ?? "—"}`,
+        `destination: ${report.destination}`,
+        `status: ${report.status}`,
+        "",
+      ].join("\n"),
+    );
+    return 0;
+  }
+  throw new Error("Usage: cwf agent install [--project dir] [--force] [--json]  |  cwf agent check [--project dir] [--json]");
 }

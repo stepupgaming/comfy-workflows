@@ -21,6 +21,17 @@ skills/comfy-workflows/SKILL.md
 skills/comfy-workflows/references/
 ```
 
+Compatible Agent Skills clients look in `.agents/skills/`, not `node_modules`. Copy the bundled skill into the project:
+
+```sh
+cwf agent install
+cwf agent check --json
+```
+
+That writes `.agents/skills/comfy-workflows/` from the **installed** package (same version as the SDK). Rerun after upgrading the core. Local edits are not overwritten unless you pass `--force`. There is no `postinstall` hook. This does not mutate `AGENTS.md`.
+
+Some clients also have their own skill directories. The portable project location this command uses is `.agents/skills/`.
+
 The skill teaches: edit TypeScript not generated IR, codegen for custom nodes, `rawNode` as escape hatch, no second compiler, explicit `cwf setup`, GitHub-canonical distribution.
 
 Deep human-doc links from an **installed** skill pin the matching git tag (`references/_links.md`) so an old package does not point at newer APIs. The live `llms.txt` on this site tracks `main`.

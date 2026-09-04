@@ -39,6 +39,8 @@ cwf run workflow.ts --url http://127.0.0.1:8188 --out out/
 
 Full walkthrough: [Code-first quickstart](/code/quickstart).
 
+Using a coding agent? After install, `cwf agent install` copies the SDK skill into `.agents/skills/comfy-workflows/`. [Coding agents](/guide/agents).
+
 ## What you just learned
 
 To change the graph, change TypeScript (or re-import JSON). Do not edit compiled API JSON. Do not edit `workflow.ir.json` by hand in a first-party package.

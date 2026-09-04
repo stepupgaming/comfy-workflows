@@ -64,6 +64,10 @@ export const ErrorCodes = {
   SetupNotApplicable: "E_SETUP_NOT_APPLICABLE",
   /** Official installer returned a failure. */
   SetupFailed: "E_SETUP_FAILED",
+  /** Bundled skill is missing from the installed package. */
+  AgentSkillMissing: "E_AGENT_SKILL_MISSING",
+  /** Project skill copy has local edits; --force required to overwrite. */
+  AgentSkillModified: "E_AGENT_SKILL_MODIFIED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

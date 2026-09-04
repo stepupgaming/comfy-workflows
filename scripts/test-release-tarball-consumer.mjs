@@ -80,8 +80,26 @@ const help = await run(
   [join(consumer, "node_modules", "@stepupgaming", "comfy-workflows", "dist", "cli", "bin.js"), "--help"],
   { cwd: consumer, echo: true },
 );
-if (help.code !== 0 || !help.stdout.includes("setup")) {
+if (help.code !== 0 || !help.stdout.includes("setup") || !help.stdout.includes("agent install")) {
   throw new Error(`cwf --help failed\n${help.stdout}\n${help.stderr}`);
 }
+
+const binJs = join(installedRoot, "dist", "cli", "bin.js");
+const agentInstall = await run(process.execPath, [binJs, "agent", "install", "--json"], {
+  cwd: consumer,
+  echo: true,
+});
+if (agentInstall.code !== 0) {
+  throw new Error(`cwf agent install failed\n${agentInstall.stdout}\n${agentInstall.stderr}`);
+}
+const projectSkill = join(consumer, ".agents", "skills", "comfy-workflows", "SKILL.md");
+if (!existsSync(projectSkill)) throw new Error(`tarball project skill missing: ${projectSkill}`);
+const agentCheck = await run(process.execPath, [binJs, "agent", "check", "--json"], {
+  cwd: consumer,
+  echo: true,
+});
+if (agentCheck.code !== 0) throw new Error(`cwf agent check failed\n${agentCheck.stderr}`);
+const st = JSON.parse(agentCheck.stdout.slice(agentCheck.stdout.indexOf("{")));
+if (st.status !== "current") throw new Error(`tarball agent check ${st.status}`);
 
 console.log("release-tarball consumer acceptance OK");

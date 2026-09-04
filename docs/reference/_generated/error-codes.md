@@ -31,3 +31,5 @@
 | `E_SETUP_DECLINED` | User declined the setup plan (or non-interactive without --yes). |
 | `E_SETUP_NOT_APPLICABLE` | Setup cannot be applied (remote URL, missing Comfy path, missing installer). |
 | `E_SETUP_FAILED` | Official installer returned a failure. |
+| `E_AGENT_SKILL_MISSING` | Bundled skill is missing from the installed package. |
+| `E_AGENT_SKILL_MODIFIED` | Project skill copy has local edits; --force required to overwrite. |
