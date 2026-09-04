@@ -1,6 +1,6 @@
 {
   "name": "@stepupgaming/comfy-workflows",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "description": "Comfy Workflows — code-first, typed, composable workflows for ComfyUI.",
   "type": "module",
   "license": "MIT",
@@ -74,6 +74,7 @@
     "build": "tsdown",
     "build:packages": "jiti scripts/build-workflow-packages.mjs && pnpm --filter \"./packages/**\" exec tsc -p tsconfig.json",
     "test": "vitest run",
+    "test:packed-consumer": "node scripts/test-packed-consumer.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "codegen:core": "jiti scripts/run-codegen.mjs",

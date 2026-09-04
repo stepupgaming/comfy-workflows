@@ -2,20 +2,27 @@
  * Comfy Registry client — read-only metadata.
  *
  * Base: https://api.comfy.org
+ *   GET /nodes/search?comfy_node_search=        → candidate packs (paginated)
  *   GET /comfy-nodes/{className}/node           → ranked candidate pack (HINT ONLY)
  *   GET /nodes/{nodeId}                         → pack metadata + latest_version
  *   GET /nodes/{nodeId}/versions                → published versions
  *   GET /nodes/{nodeId}/install?version=        → installable version payload
  *   GET /nodes/{nodeId}/versions/{v}/comfy-nodes → class definitions for that version
  *
- * `lookupClass` is never installation proof. A pack is verified only when
- * its selected version's comfy-nodes list includes the class.
+ * `lookupClass` enumerates search hits (all pages) plus the ranked hint.
+ * The ranked endpoint is never the complete candidate universe. A pack is
+ * verified only when its selected version's comfy-nodes list includes the class.
  *
  * This module never installs anything. It never follows `repository` as a
  * clone instruction. Tests inject `fetchImpl`.
  */
 
 export const DEFAULT_REGISTRY_URL = "https://api.comfy.org";
+
+/** Page size for `GET /nodes/search`. */
+export const REGISTRY_SEARCH_LIMIT = 64;
+/** Hard cap so a broken totalPages cannot loop forever. */
+export const REGISTRY_SEARCH_MAX_PAGES = 20;
 
 export interface RegistryPack {
   id: string;
@@ -37,7 +44,11 @@ export interface RegistryLookup {
 }
 
 export interface RegistryClient {
-  /** Ranked/preempted candidate. Never treat as ownership. */
+  /**
+   * Candidate packs for a class. Search (paginated) is the universe;
+   * ranked `/comfy-nodes/{class}/node` is merged as an extra hint.
+   * Never treat the result as ownership or installation proof.
+   */
   lookupClass(className: string): Promise<RegistryPack[]>;
   getPack(id: string): Promise<RegistryPack | undefined>;
   listVersions(id: string): Promise<RegistryVersion[]>;
@@ -56,6 +67,40 @@ export interface RegistryClientOptions {
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function searchNodes(body: unknown): unknown[] {
+  if (Array.isArray(body)) return body;
+  if (isRecord(body) && Array.isArray(body["nodes"])) return body["nodes"];
+  return [];
+}
+
+function searchPaging(
+  body: unknown,
+  page: number,
+  pageSize: number,
+): { totalPages: number } {
+  if (!isRecord(body)) {
+    return { totalPages: pageSize === 0 ? page : page };
+  }
+  const totalPagesRaw = body["totalPages"] ?? body["totalNumberOfPages"];
+  if (typeof totalPagesRaw === "number" && Number.isFinite(totalPagesRaw) && totalPagesRaw >= 1) {
+    return { totalPages: Math.floor(totalPagesRaw) };
+  }
+  const totalRaw = body["total"];
+  const limitRaw = body["limit"];
+  if (
+    typeof totalRaw === "number" &&
+    Number.isFinite(totalRaw) &&
+    typeof limitRaw === "number" &&
+    Number.isFinite(limitRaw) &&
+    limitRaw > 0
+  ) {
+    return { totalPages: Math.max(1, Math.ceil(totalRaw / limitRaw)) };
+  }
+  // If this page was full, there may be another; otherwise this is the last.
+  if (pageSize >= REGISTRY_SEARCH_LIMIT) return { totalPages: page + 1 };
+  return { totalPages: page };
 }
 
 function packFromNode(json: unknown): RegistryPack | undefined {
@@ -112,14 +157,37 @@ export function createRegistryClient(opts: RegistryClientOptions = {}): Registry
 
   return {
     async lookupClass(className: string): Promise<RegistryPack[]> {
+      const unique = new Map<string, RegistryPack>();
+      const add = (pack: RegistryPack | undefined): void => {
+        if (pack && !unique.has(pack.id)) unique.set(pack.id, pack);
+      };
+
       const encoded = encodeURIComponent(className);
-      const { status, body } = await getJson(`/comfy-nodes/${encoded}/node`);
-      if (status === 404) return [];
-      if (status === 200) {
-        const pack = packFromNode(body);
-        return pack ? [pack] : [];
+      let page = 1;
+      let totalPages = 1;
+      while (page <= totalPages && page <= REGISTRY_SEARCH_MAX_PAGES) {
+        const q = `/nodes/search?comfy_node_search=${encoded}&page=${page}&limit=${REGISTRY_SEARCH_LIMIT}`;
+        const { status, body } = await getJson(q);
+        if (status === 404) break;
+        if (status !== 200) {
+          throw new Error(`Comfy Registry search for ${className} failed (HTTP ${status})`);
+        }
+        const nodes = searchNodes(body);
+        const paging = searchPaging(body, page, nodes.length);
+        totalPages = paging.totalPages;
+        for (const item of nodes) add(packFromNode(item));
+        if (nodes.length === 0) break;
+        if (page >= paging.totalPages) break;
+        page += 1;
       }
-      throw new Error(`Comfy Registry lookup for ${className} failed (HTTP ${status})`);
+
+      const ranked = await getJson(`/comfy-nodes/${encoded}/node`);
+      if (ranked.status === 200) add(packFromNode(ranked.body));
+      else if (ranked.status !== 404) {
+        throw new Error(`Comfy Registry ranked lookup for ${className} failed (HTTP ${ranked.status})`);
+      }
+
+      return [...unique.values()];
     },
 
     async getPack(id: string): Promise<RegistryPack | undefined> {
@@ -163,23 +231,38 @@ export function createRegistryClient(opts: RegistryClientOptions = {}): Registry
     async listComfyNodes(id: string, version: string): Promise<string[] | undefined> {
       const encoded = encodeURIComponent(id);
       const ver = encodeURIComponent(version);
-      const { status, body } = await getJson(`/nodes/${encoded}/versions/${ver}/comfy-nodes`);
-      if (status === 404) return undefined;
-      if (status !== 200) {
-        throw new Error(`Comfy Registry comfy-nodes ${id}@${version} failed (HTTP ${status})`);
-      }
-      const raw = Array.isArray(body)
-        ? body
-        : isRecord(body) && Array.isArray(body["comfy_nodes"])
-          ? body["comfy_nodes"]
-          : isRecord(body) && Array.isArray(body["nodes"])
-            ? body["nodes"]
-            : undefined;
-      if (raw === undefined) return undefined;
       const names = new Set<string>();
-      for (const item of raw) {
-        const n = comfyNodeName(item);
-        if (n) names.add(n);
+      let page = 1;
+      let totalPages = 1;
+      let sawBody = false;
+      while (page <= totalPages && page <= REGISTRY_SEARCH_MAX_PAGES) {
+        const { status, body } = await getJson(
+          `/nodes/${encoded}/versions/${ver}/comfy-nodes?page=${page}&limit=${REGISTRY_SEARCH_LIMIT}`,
+        );
+        if (status === 404) return sawBody ? [...names].sort() : undefined;
+        if (status !== 200) {
+          throw new Error(`Comfy Registry comfy-nodes ${id}@${version} failed (HTTP ${status})`);
+        }
+        sawBody = true;
+        const raw = Array.isArray(body)
+          ? body
+          : isRecord(body) && Array.isArray(body["comfy_nodes"])
+            ? body["comfy_nodes"]
+            : isRecord(body) && Array.isArray(body["nodes"])
+              ? body["nodes"]
+              : undefined;
+        if (raw === undefined) {
+          if (page === 1) return undefined;
+          break;
+        }
+        for (const item of raw) {
+          const n = comfyNodeName(item);
+          if (n) names.add(n);
+        }
+        const paging = searchPaging(body, page, raw.length);
+        totalPages = paging.totalPages;
+        if (raw.length === 0 || page >= totalPages) break;
+        page += 1;
       }
       return [...names].sort();
     },

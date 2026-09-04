@@ -11,6 +11,8 @@ export { CORE_NODE_CLASSES, KNOWN_CORE_EXTRAS, isCoreNodeClass } from "./core.js
 export {
   createRegistryClient,
   DEFAULT_REGISTRY_URL,
+  REGISTRY_SEARCH_LIMIT,
+  REGISTRY_SEARCH_MAX_PAGES,
   type RegistryClient,
   type RegistryClientOptions,
   type RegistryLookup,

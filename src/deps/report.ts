@@ -21,8 +21,15 @@ export interface DependencyReport {
   requiredNodeClasses: string[];
   availableNodeClasses: string[];
   missingNodeClasses: string[];
+  /**
+   * @deprecated UNKNOWN is not custom. Prefer `resolvedCustomNodeClasses`
+   * / `unknownNodeClasses`. Kept as an alias of resolved-custom evidence.
+   */
   customNodeClasses: string[];
   coreNodeClasses: string[];
+  resolvedCustomNodeClasses: string[];
+  unknownNodeClasses: string[];
+  ambiguousNodeClasses: string[];
   resolution: ResolveNodesResult;
   plan: SetupPlan;
 }
@@ -52,7 +59,6 @@ export async function buildDependencyReport(
   // Without a live instance we cannot know availability — do not treat every
   // class as missing (that would make inspect without --url look broken).
   const missing = installedSet ? required.filter((c) => !installedSet.has(c)) : [];
-  const customNodeClasses = required.filter((c) => !isCoreNodeClass(c));
   const coreNodeClasses = required.filter((c) => isCoreNodeClass(c));
 
   const resolution = await resolveNodeClasses({
@@ -89,9 +95,13 @@ export async function buildDependencyReport(
       });
       resolvedVersion = selected.resolved;
     }
-    const fromResolution = resolution.resolutions.find(
-      (r) => r.pack?.id === declared.id && r.pack.resolvedVersion !== undefined,
-    )?.pack?.resolvedVersion;
+    const matching = resolution.resolutions.filter((r) => r.pack?.id === declared.id);
+    const fromResolution = matching.find((r) => r.pack?.resolvedVersion !== undefined)?.pack
+      ?.resolvedVersion;
+    const verified =
+      matching.length > 0
+        ? matching.every((r) => r.kind === "resolved_custom" && r.pack?.verified === true)
+        : false;
     planPacks.push(
       packAction({
         declared,
@@ -104,6 +114,7 @@ export async function buildDependencyReport(
           resolvedVersion === undefined &&
           fromResolution === undefined &&
           (declared.source ?? "registry") !== "manual",
+        verified,
       }),
     );
   }
@@ -131,7 +142,20 @@ export async function buildDependencyReport(
     ),
     ambiguous: resolution.ambiguous,
     remoteOnly: opts.target === undefined && opts.comfyUrl !== undefined,
+    availabilityKnown: installedSet !== undefined,
   });
+
+  const resolvedCustomNodeClasses = resolution.resolutions
+    .filter((r) => r.kind === "resolved_custom")
+    .map((r) => r.className);
+  const unknownNodeClasses = resolution.resolutions
+    .filter((r) => r.kind === "unknown")
+    .map((r) => r.className);
+  const ambiguousNodeClasses = resolution.resolutions
+    .filter((r) => r.kind === "ambiguous")
+    .map((r) => r.className);
+  // UNKNOWN != CUSTOM. Do not expose unknown classes as if they were custom.
+  const customNodeClasses = resolvedCustomNodeClasses.slice();
 
   return {
     requiredNodeClasses: required,
@@ -139,6 +163,9 @@ export async function buildDependencyReport(
     missingNodeClasses: missing,
     customNodeClasses,
     coreNodeClasses,
+    resolvedCustomNodeClasses,
+    unknownNodeClasses,
+    ambiguousNodeClasses,
     resolution,
     plan,
   };

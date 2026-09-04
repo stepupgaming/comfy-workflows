@@ -84,18 +84,20 @@ cwf resolve-nodes . --url http://127.0.0.1:8188 --write
 
 Without `--write`, nothing is mutated. With `--write`, **verified** packs are merged into `comfy.workflow.json` as specVersion 2.
 
-`GET https://api.comfy.org/comfy-nodes/{className}/node` is a **candidate hint only**. Official Comfy source treats it as a ranked/preempted “best” pack. It can attribute a core class to a third-party pack, hide other claimants, or 404 for a real custom class.
+`GET https://api.comfy.org/nodes/search?comfy_node_search={className}` is the candidate universe (paginated). `GET /comfy-nodes/{className}/node` is an additional ranked hint only — never the complete set. Official Comfy source treats the ranked endpoint as a preempted “best” pack. It can attribute a core class to a third-party pack, hide other claimants, or 404 for a real custom class.
 
 Verification pipeline:
 
 1. Required class
 2. Live `/object_info` (availability — a present class needs no install)
 3. Known-core evidence (bundled defs snapshot **plus** known newer stock classes such as `CLIPLoader` / `UNETLoader`)
-4. Author-declared `provides` (explicit mapping)
-5. Registry candidate hint
+4. Author-declared `provides` (explicit mapping — a claim, not proof)
+5. Registry search candidates (all pages) plus ranked hint
 6. Exact pack **version** (`GET /nodes/{id}/versions`, then `/install?version=`)
-7. Pack-version definitions (`GET /nodes/{id}/versions/{version}/comfy-nodes`)
+7. Pack-version definitions (`GET /nodes/{id}/versions/{version}/comfy-nodes`, paginated)
 8. Verified provider set
+
+A publisher `source: "registry"` declaration is a **claim**. Only `provided === true` for the selected version authorizes automatic installation. `provided === false` or `provided === undefined` is UNKNOWN / unverifiable and never reaches the installer.
 
 Outcomes per class:
 
@@ -152,7 +154,11 @@ cwf setup workflow --comfy C:\ComfyUI --yes --json
 
 `--yes` still refuses unresolved, ambiguous, unregistered, and version-unsatisfied packs.
 
-JSON distinguishes `alreadyInstalled`, `toInstall`, `unresolved`, `ambiguous`, `failed`, `restartRequired`, `ready`.
+JSON distinguishes `alreadyInstalled`, `toInstall`, `unresolved`, `ambiguous`, `failed`, `restartRequired`, `ready`, `availabilityKnown`.
+
+`ready: true` means every required node class is **known available** on the target Comfy instance (`/object_info`). Installing a pack is not readiness: after a successful install the plan is `installed` / `restartRequired: true` / `ready: false` until availability is re-verified. Manual-source skipped dependencies never make `ready` true while their classes are still missing.
+
+Inspect JSON classifies required classes as `coreNodeClasses`, `resolvedCustomNodeClasses`, `unknownNodeClasses`, and `ambiguousNodeClasses`. UNKNOWN is not CUSTOM.
 
 ## Local vs remote Comfy
 

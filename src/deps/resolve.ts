@@ -3,10 +3,12 @@
  *
  * Deterministic. No LLM. No guess-from-repo-name.
  *
- * `GET /comfy-nodes/{class}/node` is a candidate hint only. A pack is
- * accepted only after the selected pack version's comfy-node definitions
- * list the class (or the author declared it and verification is unavailable
- * / skipped). Ambiguous ownership is reported, never auto-picked.
+ * `GET /nodes/search?comfy_node_search=` enumerates candidate packs.
+ * `GET /comfy-nodes/{class}/node` is an additional ranked hint only.
+ * A pack is accepted only after the selected pack version's comfy-node
+ * definitions list the class. Author `source: "registry"` is a claim, not
+ * proof — unverifiable or contradictory mappings stay UNKNOWN. Ambiguous
+ * verified ownership is reported, never auto-picked.
  */
 
 import type { WorkflowManifest, WorkflowNodePack } from "../wfpack/manifest.js";
@@ -143,9 +145,11 @@ export async function resolveNodeClasses(opts: ResolveNodesOptions): Promise<Res
     if (owners.length === 1) {
       const p = owners[0]!;
       if (opts.skipLookup) {
+        // Inspect without a registry probe: keep the declaration, but do not
+        // treat an unverified claim as RESOLVED_CUSTOM (that would auto-install).
         resolutions.push({
           className,
-          kind: "resolved_custom",
+          kind: "unknown",
           pack: { id: p.id, name: p.name, repository: p.repository, verified: false },
         });
         remember(p, className);
@@ -171,9 +175,21 @@ export async function resolveNodeClasses(opts: ResolveNodesOptions): Promise<Res
         ver.resolved,
         className,
       );
-      if (provided === false) {
-        // Author mapping contradicts Registry definitions — do not treat as verified.
-        resolutions.push({ className, kind: "unknown" });
+      if (provided !== true) {
+        // false = contradictory mapping; undefined = unverifiable. Neither is proof.
+        resolutions.push({
+          className,
+          kind: "unknown",
+          pack: {
+            id: p.id,
+            name: p.name ?? meta.name,
+            repository: p.repository ?? meta.repository,
+            latestVersion: meta.latestVersion,
+            resolvedVersion: ver.resolved,
+            verified: false,
+          },
+        });
+        remember(p, className);
         continue;
       }
       const pack: WorkflowNodePack = {
@@ -192,7 +208,7 @@ export async function resolveNodeClasses(opts: ResolveNodesOptions): Promise<Res
           repository: pack.repository,
           latestVersion: meta.latestVersion,
           resolvedVersion: ver.resolved,
-          verified: provided === true,
+          verified: true,
         },
       });
       remember(pack, className);

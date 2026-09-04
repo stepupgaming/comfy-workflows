@@ -1176,6 +1176,11 @@ async function cmdInspect(
             required: report.requiredNodeClasses.length,
             available: report.availableNodeClasses.length,
             missing: report.missingNodeClasses.length,
+            coreNodeClasses: report.coreNodeClasses,
+            resolvedCustomNodeClasses: report.resolvedCustomNodeClasses,
+            unknownNodeClasses: report.unknownNodeClasses,
+            ambiguousNodeClasses: report.ambiguousNodeClasses,
+            customNodeClasses: report.customNodeClasses,
             packs: report.plan.packages,
             unresolved: report.plan.unresolved,
             ambiguous: report.plan.ambiguous,
@@ -1352,8 +1357,14 @@ async function cmdResolveNodes(
   });
 
   if (flags["write"] === true) {
-    // Write only verified registry packs (plus already-declared ones mergeResolvedPacks keeps).
-    const verified = result.packs.filter((p) => p.source === "registry");
+    // Write only packs with positive per-version evidence. A source:"registry"
+    // claim is not proof. Already-declared packs remain via mergeResolvedPacks.
+    const verifiedIds = new Set(
+      result.resolutions
+        .filter((r) => r.kind === "resolved_custom" && r.pack?.verified === true)
+        .map((r) => r.pack!.id),
+    );
+    const verified = result.packs.filter((p) => p.source === "registry" && verifiedIds.has(p.id));
     const next = mergeResolvedPacks(pkg.manifest, verified);
     writeManifestFile(pkg.dir, next);
   }
@@ -1565,6 +1576,7 @@ async function cmdSetup(
           failed: plan.failed,
           restartRequired: plan.restartRequired,
           ready: plan.ready,
+          availabilityKnown: plan.availabilityKnown,
           applyBlocked: plan.applyBlocked ?? null,
           models: plan.models,
           missingNodeClasses: plan.missingNodeClasses,
@@ -1642,6 +1654,7 @@ async function cmdSetup(
           failed: applied.plan.failed,
           restartRequired: applied.plan.restartRequired,
           ready: applied.plan.ready,
+          availabilityKnown: applied.plan.availabilityKnown,
           results: applied.results,
         },
         null,

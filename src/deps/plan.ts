@@ -25,6 +25,12 @@ export interface SetupPlanPack {
   provides: string[];
   optional?: boolean;
   action: SetupAction;
+  /**
+   * Positive per-version Registry evidence that this pack provides the
+   * required class(es). A publisher `source: "registry"` claim is not enough.
+   * `applySetupPlan` refuses anything other than `true`.
+   */
+  verified: boolean;
 }
 
 export interface SetupPlanModel {
@@ -49,6 +55,11 @@ export interface SetupPlan {
   failed: SetupPlanPack[];
   restartRequired: boolean;
   ready: boolean;
+  /**
+   * True only when required classes were checked against a live instance
+   * (`/object_info`). Without that, `ready` cannot be true.
+   */
+  availabilityKnown: boolean;
   /** Why apply is blocked even if the plan looks complete. */
   applyBlocked?: string;
 }
@@ -64,6 +75,11 @@ export interface CreateSetupPlanInput {
   ambiguous: ClassResolution[];
   /** Remote HTTP Comfy cannot be written from here. */
   remoteOnly?: boolean;
+  /**
+   * False when `/object_info` was not observed. `ready` cannot be true
+   * without known target availability.
+   */
+  availabilityKnown?: boolean;
 }
 
 export function createSetupPlan(input: CreateSetupPlanInput): SetupPlan {
@@ -72,7 +88,9 @@ export function createSetupPlan(input: CreateSetupPlanInput): SetupPlan {
   const blockingUnresolved = input.unresolved.filter((u) => u.kind === "unknown");
   const blockingAmbiguous = input.ambiguous;
   const requiredMissingPacks = toInstall.filter((p) => p.optional !== true);
+  const availabilityKnown = input.availabilityKnown === true;
   const ready =
+    availabilityKnown &&
     blockingUnresolved.length === 0 &&
     blockingAmbiguous.length === 0 &&
     requiredMissingPacks.length === 0 &&
@@ -109,6 +127,7 @@ export function createSetupPlan(input: CreateSetupPlanInput): SetupPlan {
     failed: [],
     restartRequired: toInstall.length > 0,
     ready,
+    availabilityKnown,
     applyBlocked,
   };
 }
@@ -120,10 +139,19 @@ export function packAction(opts: {
   installedVersion?: string;
   /** Declared range matched no Registry version — do not install latest. */
   versionUnsatisfied?: boolean;
+  /**
+   * Positive per-version evidence that this pack provides the required
+   * class(es). Missing/false → never auto-install, even if source is registry.
+   */
+  verified?: boolean;
 }): SetupPlanPack {
+  const verified = opts.verified === true;
   let action: SetupAction = "install";
   if (opts.declared.source === "manual") {
     // Author mapping is not permission to run unregistered installers.
+    action = "skip";
+  } else if (!verified) {
+    // A `source: "registry"` claim without definitions proof is not installable.
     action = "skip";
   } else if (opts.versionUnsatisfied) action = "skip";
   else if (opts.versionStatus === "compatible") action = "skip";
@@ -144,5 +172,6 @@ export function packAction(opts: {
     provides: [...(opts.declared.provides ?? [])].sort(),
     optional: opts.declared.optional,
     action,
+    verified,
   };
 }

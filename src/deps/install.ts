@@ -131,8 +131,13 @@ export async function applySetupPlan(opts: ApplySetupOptions): Promise<{
   const results: InstallerResult[] = [];
 
   if (opts.dryRun) {
+    const restartRequired = toInstall.length > 0 || opts.plan.restartRequired;
     return {
-      plan: { ...opts.plan, restartRequired: toInstall.length > 0 },
+      plan: {
+        ...opts.plan,
+        restartRequired,
+        ready: restartRequired ? false : opts.plan.ready,
+      },
       results: toInstall.map((p) => ({
         id: p.id,
         ok: true,
@@ -186,13 +191,16 @@ export async function applySetupPlan(opts: ApplySetupOptions): Promise<{
   const failed: SetupPlanPack[] = [];
 
   for (const pack of toInstall) {
-    if (pack.source !== "registry") {
+    if (pack.source !== "registry" || pack.verified !== true) {
       failed.push(pack);
       results.push({
         id: pack.id,
         ok: false,
         stdout: "",
-        stderr: "Unregistered packs are not auto-installed.",
+        stderr:
+          pack.source !== "registry"
+            ? "Unregistered packs are not auto-installed."
+            : "Refusing to install an unverified registry pack (no positive per-version class evidence).",
         code: 1,
       });
       continue;
@@ -230,6 +238,17 @@ export async function applySetupPlan(opts: ApplySetupOptions): Promise<{
 
   const stillToInstall = toInstall.filter((p) => failed.some((f) => f.id === p.id));
   const installedNow = toInstall.filter((p) => !failed.some((f) => f.id === p.id));
+  // Installation success is not readiness. Classes remain unavailable until
+  // the target Comfy instance is re-verified (typically after a restart).
+  const restartRequired = installedNow.length > 0 || opts.plan.restartRequired;
+  const ready =
+    opts.plan.availabilityKnown === true &&
+    failed.length === 0 &&
+    stillToInstall.length === 0 &&
+    opts.plan.unresolved.length === 0 &&
+    opts.plan.ambiguous.length === 0 &&
+    opts.plan.missingNodeClasses.length === 0 &&
+    !restartRequired;
   const plan: SetupPlan = {
     ...opts.plan,
     alreadyInstalled: [
@@ -238,9 +257,8 @@ export async function applySetupPlan(opts: ApplySetupOptions): Promise<{
     ],
     toInstall: stillToInstall,
     failed,
-    restartRequired: installedNow.length > 0 || opts.plan.restartRequired,
-    ready:
-      failed.length === 0 && opts.plan.unresolved.length === 0 && opts.plan.ambiguous.length === 0,
+    restartRequired,
+    ready,
   };
   return { plan, results };
 }

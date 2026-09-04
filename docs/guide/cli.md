@@ -112,7 +112,7 @@ Prints a package's identity, parameters, outputs, and requirements — from mani
 cwf resolve-nodes <package-or-path> [--url URL] [--write] [--json]
 ```
 
-Maps missing (or all non-core) node classes to Comfy Registry packs after verifying pack-version definitions. The single-class Registry lookup is a hint only. Without `--write` this is read-only. With `--write` it merges **verified** `requires.nodePacks` into `comfy.workflow.json` (specVersion 2). Ambiguous **verified** ownership exits non-zero with `E_NODE_PACK_AMBIGUOUS`; unknown classes report `E_NODE_PACK_UNKNOWN`. No LLM, no guess-from-repo-name, no ranked false-positive installs.
+Maps missing (or all non-core) node classes to Comfy Registry packs after verifying pack-version definitions. Candidate discovery uses paginated Registry search (`/nodes/search?comfy_node_search=`); the ranked `/comfy-nodes/{class}/node` lookup is a hint only. Without `--write` this is read-only. With `--write` it merges **verified** `requires.nodePacks` into `comfy.workflow.json` (specVersion 2). Ambiguous **verified** ownership exits non-zero with `E_NODE_PACK_AMBIGUOUS`; unknown classes report `E_NODE_PACK_UNKNOWN`. A publisher `source: "registry"` claim is not proof. No LLM, no guess-from-repo-name, no ranked false-positive installs.
 
 ### `cwf node-pack`
 
@@ -129,7 +129,7 @@ Manually declare pack metadata when the registry cannot identify an owner. Entri
 cwf setup <package-or-path> --comfy <Comfy-install-path> [--url URL] [--yes] [--dry-run] [--json]
 ```
 
-Prepares a **local** Comfy installation for a workflow. Prints the exact registered packs **and versions** that will be installed (executable Python), asks `Continue? [y/N]` (default No), then delegates to ComfyUI-Manager `cm-cli.py install <id>@<exact>`. Uses the target Comfy Python (`python_embeded` on portable Windows). `--yes` approves the **verified** plan; it does not relax source policy, choose ambiguous providers, or install unsatisfied ranges. `--dry-run` prints the plan and installs nothing. Remote `--url` without `--comfy` plans but does not apply. See [Custom-node dependencies](./custom-nodes).
+Prepares a **local** Comfy installation for a workflow. Prints the exact registered packs **and versions** that will be installed (executable Python), asks `Continue? [y/N]` (default No), then delegates to ComfyUI-Manager `cm-cli.py install <id>@<exact>`. Uses the target Comfy Python (`python_embeded` on portable Windows). `--yes` approves the **verified** plan; it does not relax source policy, choose ambiguous providers, install unverified claims, or install unsatisfied ranges. `--dry-run` prints the plan and installs nothing. Remote `--url` without `--comfy` plans but does not apply. `ready: true` means every required class is known available on the target instance — install success is not readiness. See [Custom-node dependencies](./custom-nodes).
 
 ### `cwf explain`
 

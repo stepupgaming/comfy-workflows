@@ -70,8 +70,8 @@ const KREA: RegistryPack = {
 function mockRegistry(
   map: Record<string, RegistryPack | RegistryPack[]>,
   opts: {
-    /** Class names actually listed in a pack version's comfy-nodes. */
-    provided?: Record<string, string[]>;
+    /** Class names actually listed in a pack version's comfy-nodes. `undefined` = definitions unavailable. */
+    provided?: Record<string, string[] | undefined>;
     versions?: Record<string, string[]>;
   } = {},
 ): {
@@ -215,6 +215,30 @@ async function startRegistryServer(
 
 function vhsHandler(u: string, res: ServerResponse): boolean {
   res.setHeader("Content-Type", "application/json");
+  if (u.startsWith("/nodes/search") || u.includes("/nodes/search?")) {
+    const q = new URL(u, "http://registry.test").searchParams.get("comfy_node_search");
+    if (q === "VHS_LoadVideo" || q === "VHS_VideoCombine") {
+      res.end(
+        JSON.stringify({
+          nodes: [
+            {
+              id: VHS.id,
+              name: VHS.name,
+              repository: VHS.repository,
+              latest_version: { version: VHS.latestVersion },
+            },
+          ],
+          page: 1,
+          limit: 64,
+          total: 1,
+          totalPages: 1,
+        }),
+      );
+      return true;
+    }
+    res.end(JSON.stringify({ nodes: [], page: 1, limit: 64, total: 0, totalPages: 1 }));
+    return true;
+  }
   if (
     u.includes("/comfy-nodes/VHS_LoadVideo/node") ||
     u.includes("/comfy-nodes/VHS_VideoCombine/node")
@@ -604,6 +628,7 @@ describe("setup planning", () => {
       declared: { id: "comfyui-videohelpersuite", version: "^1.7.0", source: "registry" },
       versionStatus: "compatible",
       installedVersion: "1.7.9",
+      verified: true,
     });
     expect(p.action).toBe("skip");
   });
@@ -613,14 +638,32 @@ describe("setup planning", () => {
       declared: { id: "comfyui-videohelpersuite", version: "^1.8.0", source: "registry" },
       versionStatus: "incompatible",
       installedVersion: "1.0.0",
+      verified: true,
     });
     expect(p.action).toBe("upgrade");
+    expect(p.verified).toBe(true);
+  });
+
+  it("unverified registry claim is never auto-installed", () => {
+    const p = packAction({
+      declared: {
+        id: "comfyui-videohelpersuite",
+        source: "registry",
+        provides: ["VHS_LoadVideo"],
+      },
+      versionStatus: "missing",
+      resolvedVersion: "1.7.9",
+      verified: false,
+    });
+    expect(p.action).toBe("skip");
+    expect(p.verified).toBe(false);
   });
 
   it("unknown version does not pretend compatibility via reinstall", () => {
     const p = packAction({
       declared: { id: "comfyui-videohelpersuite", version: "^1.8.0", source: "registry" },
       versionStatus: "unknown",
+      verified: true,
     });
     expect(p.action).toBe("skip");
   });
@@ -630,6 +673,7 @@ describe("setup planning", () => {
       declared: { id: "comfyui-videohelpersuite", version: "^9.9.9", source: "registry" },
       versionStatus: "missing",
       versionUnsatisfied: true,
+      verified: true,
     });
     expect(p.action).toBe("skip");
     expect(p.resolvedVersion).toBeUndefined();
@@ -678,6 +722,7 @@ describe("applySetupPlan security", () => {
           },
           versionStatus: "missing",
           resolvedVersion: "1.7.9",
+          verified: true,
         }),
       ],
       unresolved: [],
@@ -715,6 +760,7 @@ describe("applySetupPlan security", () => {
           source: "manual",
           provides: ["Foo"],
           action: "install",
+          verified: false,
         },
       ],
       unresolved: [],
@@ -752,6 +798,7 @@ describe("applySetupPlan security", () => {
           },
           versionStatus: "missing",
           resolvedVersion: "1.7.9",
+          verified: true,
         }),
       ],
       unresolved: [],
@@ -780,6 +827,7 @@ describe("applySetupPlan security", () => {
             source: "registry",
             provides: [],
             action: "install",
+            verified: true,
           },
         ],
       },
@@ -828,6 +876,7 @@ describe("applySetupPlan security", () => {
           },
           versionStatus: "missing",
           resolvedVersion: "1.7.9",
+          verified: true,
         }),
       ],
       unresolved: [],
@@ -932,6 +981,7 @@ describe("CLI resolve-nodes / setup / inspect", () => {
   });
 
   it("setup --dry-run performs no mutation and default path requires approval", async () => {
+    const reg = await startRegistryServer(vhsHandler);
     const dir = customPkg({
       classes: ["VHS_LoadVideo"],
       packs: [{ id: "comfyui-videohelpersuite", provides: ["VHS_LoadVideo"], source: "registry" }],
@@ -939,18 +989,35 @@ describe("CLI resolve-nodes / setup / inspect", () => {
     const comfy = mkdtempSync(join(tmpdir(), "cwf-comfy-"));
     mkdirSync(join(comfy, "custom_nodes"), { recursive: true });
     writeFileSync(join(comfy, "main.py"), "#\n");
-    const dry = await cwf(["setup", dir, "--comfy", comfy, "--dry-run", "--json"]);
-    expect(jsonOf<{ toInstall: unknown[]; dryRun: boolean }>(dry.stdout).dryRun).toBe(true);
-    expect(existsSync(join(comfy, "custom_nodes", "comfyui-videohelpersuite"))).toBe(false);
+    try {
+      const dry = await cwf([
+        "setup",
+        dir,
+        "--comfy",
+        comfy,
+        "--dry-run",
+        "--json",
+        "--registry-url",
+        reg.url,
+      ]);
+      expect(jsonOf<{ toInstall: unknown[]; dryRun: boolean }>(dry.stdout).dryRun).toBe(true);
+      expect(existsSync(join(comfy, "custom_nodes", "comfyui-videohelpersuite"))).toBe(false);
 
-    const declined = await cwf(["setup", dir, "--comfy", comfy, "--json"]);
-    // Non-TTY without --yes must not apply; JSON plan is returned.
-    const body = jsonOf<{ toInstall: Array<{ id: string }>; dryRun: boolean }>(declined.stdout);
-    expect(body.dryRun).toBe(true);
-    expect(body.toInstall[0]?.id).toBe("comfyui-videohelpersuite");
+      const declined = await cwf(["setup", dir, "--comfy", comfy, "--json", "--registry-url", reg.url]);
+      // Non-TTY without --yes must not apply; JSON plan is returned.
+      const body = jsonOf<{ toInstall: Array<{ id: string }>; dryRun: boolean }>(declined.stdout);
+      expect(body.dryRun).toBe(true);
+      expect(body.toInstall[0]?.id).toBe("comfyui-videohelpersuite");
+      expect(
+        (body.toInstall[0] as { verified?: boolean } | undefined)?.verified,
+      ).toBe(true);
+    } finally {
+      await reg.close();
+    }
   });
 
   it("setup --yes applies plan through argument-array installer", async () => {
+    const reg = await startRegistryServer(vhsHandler);
     const dir = customPkg({
       classes: ["VHS_LoadVideo"],
       packs: [{ id: "comfyui-videohelpersuite", provides: ["VHS_LoadVideo"], source: "registry" }],
@@ -964,20 +1031,34 @@ describe("CLI resolve-nodes / setup / inspect", () => {
       join(comfy, "custom_nodes", "ComfyUI-Manager", "cm-cli.py"),
       "raise SystemExit(0)\n",
     );
-    const res = await cwf(["setup", dir, "--comfy", comfy, "--yes", "--json"]);
-    // No target Python → E_COMFY_PYTHON_UNKNOWN on stderr. If Python exists, a
-    // structured JSON plan is fine. Never shell-concatenate; never ready on unresolved.
-    const raw = res.stdout.trim().length > 0 ? res.stdout : res.stderr;
-    const body = jsonOf<{
-      failed?: unknown[];
-      ready?: boolean;
-      error?: { code?: string };
-    }>(raw);
-    if (body.error) {
-      expect(body.error.code).toBe("E_COMFY_PYTHON_UNKNOWN");
-    } else {
-      expect(body).toHaveProperty("failed");
-      expect(typeof body.ready).toBe("boolean");
+    try {
+      const res = await cwf([
+        "setup",
+        dir,
+        "--comfy",
+        comfy,
+        "--yes",
+        "--json",
+        "--registry-url",
+        reg.url,
+      ]);
+      // No target Python → E_COMFY_PYTHON_UNKNOWN on stderr. If Python exists, a
+      // structured JSON plan is fine. Never shell-concatenate; never ready on unresolved.
+      const raw = res.stdout.trim().length > 0 ? res.stdout : res.stderr;
+      const body = jsonOf<{
+        failed?: unknown[];
+        ready?: boolean;
+        error?: { code?: string };
+      }>(raw);
+      if (body.error) {
+        expect(body.error.code).toBe("E_COMFY_PYTHON_UNKNOWN");
+      } else {
+        expect(body).toHaveProperty("failed");
+        expect(typeof body.ready).toBe("boolean");
+        expect(body.ready).toBe(false);
+      }
+    } finally {
+      await reg.close();
     }
   });
 
@@ -1048,6 +1129,7 @@ describe("CLI resolve-nodes / setup / inspect", () => {
   });
 
   it("paths containing spaces work on Windows for --comfy", async () => {
+    const reg = await startRegistryServer(vhsHandler);
     const dir = customPkg({
       classes: ["VHS_LoadVideo"],
       packs: [{ id: "comfyui-videohelpersuite", provides: ["VHS_LoadVideo"], source: "registry" }],
@@ -1056,10 +1138,24 @@ describe("CLI resolve-nodes / setup / inspect", () => {
     const comfy = join(parent, "Comfy UI Root");
     mkdirSync(join(comfy, "custom_nodes"), { recursive: true });
     writeFileSync(join(comfy, "main.py"), "#\n");
-    const res = await cwf(["setup", dir, "--comfy", comfy, "--dry-run", "--json"]);
-    expect(res.code).toBe(0);
-    const body = jsonOf<{ toInstall: Array<{ id: string }> }>(res.stdout);
-    expect(body.toInstall[0]?.id).toBe("comfyui-videohelpersuite");
+    try {
+      const res = await cwf([
+        "setup",
+        dir,
+        "--comfy",
+        comfy,
+        "--dry-run",
+        "--json",
+        "--registry-url",
+        reg.url,
+      ]);
+      expect(res.code).toBe(0);
+      const body = jsonOf<{ toInstall: Array<{ id: string; verified?: boolean }> }>(res.stdout);
+      expect(body.toInstall[0]?.id).toBe("comfyui-videohelpersuite");
+      expect(body.toInstall[0]?.verified).toBe(true);
+    } finally {
+      await reg.close();
+    }
   });
 });
 
@@ -1112,10 +1208,463 @@ describe("registry client", () => {
       const client = createRegistryClient({ baseUrl: reg.url });
       const packs = await client.lookupClass("VHS_LoadVideo");
       expect(packs[0]?.id).toBe("comfyui-videohelpersuite");
+      expect(reg.hits.some((h) => h.includes("/nodes/search"))).toBe(true);
       const none = await client.lookupClass("GemmyH3SaveAVLatent");
       expect(none).toEqual([]);
     } finally {
       await reg.close();
     }
+  });
+
+  it("enumerates paginated search hits plus ranked hint via real HTTP client", async () => {
+    const searchPages: Record<string, unknown> = {
+      "1": {
+        nodes: [{ id: "foo-pack", name: "Foo", latest_version: { version: "1.0.0" } }],
+        page: 1,
+        limit: 1,
+        total: 2,
+        totalPages: 2,
+      },
+      "2": {
+        nodes: [{ id: "alt-foo-pack", name: "Alt", latest_version: { version: "2.0.0" } }],
+        page: 2,
+        limit: 1,
+        total: 2,
+        totalPages: 2,
+      },
+    };
+    const reg = await startRegistryServer((u, res) => {
+      res.setHeader("Content-Type", "application/json");
+      if (u.startsWith("/nodes/search")) {
+        const page = new URL(u, "http://registry.test").searchParams.get("page") ?? "1";
+        res.end(JSON.stringify(searchPages[page] ?? { nodes: [], page: 1, totalPages: 1, total: 0 }));
+        return true;
+      }
+      if (u.includes("/comfy-nodes/FooSampler/node")) {
+        res.end(JSON.stringify({ id: "ranked-foo", name: "Ranked", latest_version: { version: "9.0.0" } }));
+        return true;
+      }
+      return false;
+    });
+    try {
+      const client = createRegistryClient({ baseUrl: reg.url });
+      const packs = await client.lookupClass("FooSampler");
+      expect(packs.map((p) => p.id).sort()).toEqual(["alt-foo-pack", "foo-pack", "ranked-foo"]);
+      expect(reg.hits.filter((h) => h.includes("/nodes/search")).length).toBeGreaterThanOrEqual(2);
+      expect(reg.hits.some((h) => h.includes("/comfy-nodes/FooSampler/node"))).toBe(true);
+    } finally {
+      await reg.close();
+    }
+  });
+
+  it("listComfyNodes paginates real HTTP definitions", async () => {
+    const pages: Record<string, unknown> = {
+      "1": {
+        comfy_nodes: [{ comfy_node_name: "VHS_SelectImages" }],
+        totalNumberOfPages: 2,
+      },
+      "2": {
+        comfy_nodes: [{ comfy_node_name: "VHS_LoadVideo" }, { comfy_node_name: "VHS_VideoCombine" }],
+        totalNumberOfPages: 2,
+      },
+    };
+    const reg = await startRegistryServer((u, res) => {
+      res.setHeader("Content-Type", "application/json");
+      if (/\/nodes\/comfyui-videohelpersuite\/versions\/1\.7\.9\/comfy-nodes/.test(u)) {
+        const page = new URL(u, "http://registry.test").searchParams.get("page") ?? "1";
+        res.end(JSON.stringify(pages[page] ?? { comfy_nodes: [], totalNumberOfPages: 2 }));
+        return true;
+      }
+      return false;
+    });
+    try {
+      const client = createRegistryClient({ baseUrl: reg.url });
+      const names = await client.listComfyNodes("comfyui-videohelpersuite", "1.7.9");
+      expect(names).toEqual(["VHS_LoadVideo", "VHS_SelectImages", "VHS_VideoCombine"]);
+      expect(reg.hits.filter((h) => h.includes("comfy-nodes")).length).toBeGreaterThanOrEqual(2);
+    } finally {
+      await reg.close();
+    }
+  });
+
+  it("ambiguity is proven through real RegistryClient HTTP, not mockRegistry arrays", async () => {
+    const packs = [
+      { id: "foo-pack", name: "Foo", latest_version: { version: "1.0.0" } },
+      { id: "alt-foo-pack", name: "Alt", latest_version: { version: "1.0.0" } },
+    ];
+    const reg = await startRegistryServer((u, res) => {
+      res.setHeader("Content-Type", "application/json");
+      if (u.startsWith("/nodes/search")) {
+        res.end(JSON.stringify({ nodes: packs, page: 1, limit: 64, total: 2, totalPages: 1 }));
+        return true;
+      }
+      if (u.includes("/comfy-nodes/FooSampler/node")) {
+        res.end(JSON.stringify(packs[0]));
+        return true;
+      }
+      const versionMatch = /\/nodes\/([^/]+)\/versions\/([^/]+)\/comfy-nodes/.exec(u);
+      if (versionMatch) {
+        res.end(JSON.stringify({ comfy_nodes: [{ comfy_node_name: "FooSampler" }] }));
+        return true;
+      }
+      if (/\/nodes\/[^/]+\/versions/.test(u) && !u.includes("comfy-nodes")) {
+        res.end(JSON.stringify([{ version: "1.0.0", status: "NodeVersionStatusActive" }]));
+        return true;
+      }
+      if (/\/nodes\/[^/]+\/install/.test(u)) {
+        res.end(JSON.stringify({ version: "1.0.0" }));
+        return true;
+      }
+      const getPack = /\/nodes\/(foo-pack|alt-foo-pack)$/.exec(u);
+      if (getPack) {
+        res.end(JSON.stringify(packs.find((p) => p.id === getPack[1])));
+        return true;
+      }
+      return false;
+    });
+    try {
+      const client = createRegistryClient({ baseUrl: reg.url });
+      const r = await resolveNodeClasses({
+        nodeClasses: ["FooSampler"],
+        registry: client,
+      });
+      expect(r.ambiguous).toHaveLength(1);
+      expect(r.ambiguous[0]?.candidates?.map((c) => c.id).sort()).toEqual([
+        "alt-foo-pack",
+        "foo-pack",
+      ]);
+      expect(r.packs).toEqual([]);
+      expect(r.resolutions[0]?.kind).toBe("ambiguous");
+    } finally {
+      await reg.close();
+    }
+  });
+});
+
+describe("unverified registry claims never auto-install", () => {
+  function comfyTree(): ReturnType<typeof inspectComfyTarget> {
+    const tmp = mkdtempSync(join(tmpdir(), "cwf-comfy-"));
+    mkdirSync(join(tmp, "custom_nodes", "ComfyUI-Manager"), { recursive: true });
+    writeFileSync(join(tmp, "main.py"), "# comfy\n");
+    writeFileSync(join(tmp, "custom_nodes", "ComfyUI-Manager", "cm-cli.py"), "# manager\n");
+    return inspectComfyTarget(tmp);
+  }
+
+  it("v2 source:registry lie with definitions that omit the class does not reach installer", async () => {
+    const target = comfyTree();
+    const spawned: string[][] = [];
+    const manifest = parseWorkflowManifest({
+      ...BASE_MANIFEST,
+      specVersion: 2,
+      requires: {
+        nodeClasses: ["VHS_LoadVideo"],
+        nodePacks: [
+          {
+            id: "comfyui-videohelpersuite",
+            provides: ["VHS_LoadVideo"],
+            source: "registry",
+          },
+        ],
+        models: [],
+      },
+    });
+    const report = await buildDependencyReport({
+      manifest,
+      nodeClasses: ["VHS_LoadVideo"],
+      installedClasses: [],
+      registry: mockRegistry(
+        { VHS_LoadVideo: VHS },
+        { provided: { "comfyui-videohelpersuite": ["SomeOtherNode"] } },
+      ),
+      target,
+    });
+    expect(report.unknownNodeClasses).toContain("VHS_LoadVideo");
+    expect(report.customNodeClasses).not.toContain("VHS_LoadVideo");
+    expect(report.plan.toInstall).toEqual([]);
+    expect(report.plan.packages[0]?.verified).toBe(false);
+    expect(report.plan.ready).toBe(false);
+    const applied = await applySetupPlan({
+      plan: {
+        ...report.plan,
+        unresolved: [],
+        ambiguous: [],
+        toInstall: [
+          {
+            ...report.plan.packages[0]!,
+            action: "install",
+            source: "registry",
+            verified: false,
+          },
+        ],
+      },
+      target,
+      yes: true,
+      pythonPath: "python",
+      run: async (opts) => {
+        spawned.push(opts.args);
+        return { code: 0, stdout: "should not run", stderr: "" };
+      },
+    });
+    expect(spawned).toEqual([]);
+    expect(applied.plan.failed.map((f) => f.id)).toContain("comfyui-videohelpersuite");
+    expect(applied.results[0]?.stderr).toMatch(/unverified/i);
+  });
+
+  it("Registry definitions unavailable (undefined) stays UNKNOWN and does not install", async () => {
+    const target = comfyTree();
+    const spawned: string[][] = [];
+    const report = await buildDependencyReport({
+      manifest: parseWorkflowManifest({
+        ...BASE_MANIFEST,
+        specVersion: 2,
+        requires: {
+          nodeClasses: ["VHS_LoadVideo"],
+          nodePacks: [
+            {
+              id: "comfyui-videohelpersuite",
+              provides: ["VHS_LoadVideo"],
+              source: "registry",
+            },
+          ],
+          models: [],
+        },
+      }),
+      nodeClasses: ["VHS_LoadVideo"],
+      installedClasses: [],
+      registry: mockRegistry(
+        { VHS_LoadVideo: VHS },
+        { provided: { "comfyui-videohelpersuite": undefined } },
+      ),
+      target,
+    });
+    expect(report.resolution.resolutions[0]?.kind).toBe("unknown");
+    expect(report.plan.toInstall).toEqual([]);
+    const applied = await applySetupPlan({
+      plan: {
+        ...report.plan,
+        unresolved: [],
+        ambiguous: [],
+        toInstall: [
+          {
+            id: "comfyui-videohelpersuite",
+            versionStatus: "missing",
+            source: "registry",
+            provides: ["VHS_LoadVideo"],
+            action: "install",
+            verified: false,
+            resolvedVersion: "1.7.9",
+          },
+        ],
+      },
+      target,
+      yes: true,
+      pythonPath: "python",
+      run: async (opts) => {
+        spawned.push(opts.args);
+        return { code: 0, stdout: "no", stderr: "" };
+      },
+    });
+    expect(spawned).toEqual([]);
+    expect(applied.plan.failed).toHaveLength(1);
+  });
+
+  it("exact verified registry pack does reach installer", async () => {
+    const target = comfyTree();
+    const spawned: string[][] = [];
+    const report = await buildDependencyReport({
+      manifest: parseWorkflowManifest({
+        ...BASE_MANIFEST,
+        specVersion: 2,
+        requires: {
+          nodeClasses: ["VHS_LoadVideo"],
+          nodePacks: [
+            {
+              id: "comfyui-videohelpersuite",
+              provides: ["VHS_LoadVideo"],
+              source: "registry",
+            },
+          ],
+          models: [],
+        },
+      }),
+      nodeClasses: ["VHS_LoadVideo"],
+      installedClasses: [],
+      registry: mockRegistry({ VHS_LoadVideo: VHS }),
+      target,
+    });
+    expect(report.plan.toInstall.map((p) => p.id)).toEqual(["comfyui-videohelpersuite"]);
+    expect(report.plan.toInstall[0]?.verified).toBe(true);
+    expect(report.resolvedCustomNodeClasses).toEqual(["VHS_LoadVideo"]);
+    const applied = await applySetupPlan({
+      plan: report.plan,
+      target,
+      yes: true,
+      pythonPath: "python",
+      run: async (opts) => {
+        spawned.push(opts.args);
+        return { code: 0, stdout: "[INSTALLED] comfyui-videohelpersuite", stderr: "" };
+      },
+    });
+    expect(spawned).toEqual([["install", "comfyui-videohelpersuite@1.7.9", "--exit-on-fail"]]);
+    expect(applied.plan.failed).toEqual([]);
+    expect(applied.plan.restartRequired).toBe(true);
+    expect(applied.plan.ready).toBe(false);
+  });
+});
+
+describe("ready invariant", () => {
+  it("manual mapping + missing class => ready false", async () => {
+    const report = await buildDependencyReport({
+      manifest: parseWorkflowManifest({
+        ...BASE_MANIFEST,
+        specVersion: 2,
+        requires: {
+          nodeClasses: ["RTXVideoSuperResolution"],
+          nodePacks: [
+            {
+              id: "ComfyUI-NVIDIA-RTX-VSR-Pro",
+              provides: ["RTXVideoSuperResolution"],
+              source: "manual",
+            },
+          ],
+          models: [],
+        },
+      }),
+      nodeClasses: ["RTXVideoSuperResolution"],
+      installedClasses: [],
+      registry: mockRegistry({}),
+    });
+    expect(report.plan.toInstall).toEqual([]);
+    expect(report.plan.ready).toBe(false);
+    expect(report.plan.missingNodeClasses).toContain("RTXVideoSuperResolution");
+  });
+
+  it("successful install + restart required + old object_info => ready false", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "cwf-comfy-"));
+    mkdirSync(join(tmp, "custom_nodes", "ComfyUI-Manager"), { recursive: true });
+    writeFileSync(join(tmp, "main.py"), "# comfy\n");
+    writeFileSync(join(tmp, "custom_nodes", "ComfyUI-Manager", "cm-cli.py"), "# manager\n");
+    const target = inspectComfyTarget(tmp);
+    const plan = createSetupPlan({
+      manifest: parseWorkflowManifest({
+        ...BASE_MANIFEST,
+        specVersion: 2,
+        requires: {
+          nodeClasses: ["VHS_LoadVideo"],
+          nodePacks: [
+            {
+              id: "comfyui-videohelpersuite",
+              provides: ["VHS_LoadVideo"],
+              source: "registry",
+            },
+          ],
+          models: [],
+        },
+      }),
+      missingNodeClasses: ["VHS_LoadVideo"],
+      availableNodeClasses: [],
+      packs: [
+        packAction({
+          declared: {
+            id: "comfyui-videohelpersuite",
+            provides: ["VHS_LoadVideo"],
+            source: "registry",
+          },
+          versionStatus: "missing",
+          resolvedVersion: "1.7.9",
+          verified: true,
+        }),
+      ],
+      unresolved: [],
+      ambiguous: [],
+      target: { root: tmp, layout: "git" },
+      availabilityKnown: true,
+    });
+    const applied = await applySetupPlan({
+      plan,
+      target,
+      yes: true,
+      pythonPath: "python",
+      run: async () => ({ code: 0, stdout: "[INSTALLED]", stderr: "" }),
+    });
+    expect(applied.plan.restartRequired).toBe(true);
+    expect(applied.plan.missingNodeClasses).toContain("VHS_LoadVideo");
+    expect(applied.plan.ready).toBe(false);
+  });
+
+  it("unresolved/ambiguous => ready false", () => {
+    const unresolved = createSetupPlan({
+      manifest: parseWorkflowManifest(BASE_MANIFEST),
+      missingNodeClasses: ["GemmyH3SaveAVLatent"],
+      availableNodeClasses: [],
+      packs: [],
+      unresolved: [{ className: "GemmyH3SaveAVLatent", kind: "unknown" }],
+      ambiguous: [],
+      availabilityKnown: true,
+    });
+    expect(unresolved.ready).toBe(false);
+    const ambiguous = createSetupPlan({
+      manifest: parseWorkflowManifest(BASE_MANIFEST),
+      missingNodeClasses: ["FooSampler"],
+      availableNodeClasses: [],
+      packs: [],
+      unresolved: [],
+      ambiguous: [
+        {
+          className: "FooSampler",
+          kind: "ambiguous",
+          candidates: [{ id: "a" }, { id: "b" }],
+        },
+      ],
+      availabilityKnown: true,
+    });
+    expect(ambiguous.ready).toBe(false);
+  });
+
+  it("post-restart object_info containing every required class => ready true", async () => {
+    const report = await buildDependencyReport({
+      manifest: parseWorkflowManifest({
+        ...BASE_MANIFEST,
+        specVersion: 2,
+        requires: {
+          nodeClasses: ["VHS_LoadVideo", "KSampler"],
+          nodePacks: [
+            {
+              id: "comfyui-videohelpersuite",
+              provides: ["VHS_LoadVideo"],
+              source: "registry",
+            },
+          ],
+          models: [],
+        },
+      }),
+      nodeClasses: ["VHS_LoadVideo", "KSampler"],
+      installedClasses: ["VHS_LoadVideo", "KSampler"],
+      registry: mockRegistry({ VHS_LoadVideo: VHS }),
+    });
+    expect(report.missingNodeClasses).toEqual([]);
+    expect(report.plan.toInstall).toEqual([]);
+    expect(report.plan.ready).toBe(true);
+  });
+
+  it("UNKNOWN classes are not reported as custom", async () => {
+    const report = await buildDependencyReport({
+      manifest: parseWorkflowManifest({
+        specVersion: 1,
+        name: "x",
+        title: "X",
+        entry: "./workflow.ir.json",
+        parameters: {},
+        outputs: [],
+        requires: { nodeClasses: ["GemmyH3SaveAVLatent", "KSampler"], nodePacks: [], models: [] },
+      }),
+      nodeClasses: ["GemmyH3SaveAVLatent", "KSampler"],
+      installedClasses: [],
+      registry: mockRegistry({}),
+    });
+    expect(report.coreNodeClasses).toEqual(["KSampler"]);
+    expect(report.unknownNodeClasses).toEqual(["GemmyH3SaveAVLatent"]);
+    expect(report.resolvedCustomNodeClasses).toEqual([]);
+    expect(report.customNodeClasses).toEqual([]);
   });
 });
