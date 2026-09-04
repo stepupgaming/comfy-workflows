@@ -1,11 +1,6 @@
----
-title: Custom-node dependencies
-layout: doc
----
-
 # Custom-node dependencies
 
-A published workflow should declare which Comfy custom-node packs it needs. Comfy Workflows resolves those declarations against the Comfy Registry, and `cwf setup` prepares a local Comfy installation — after you approve the exact plan.
+A published workflow should declare which Comfy custom-node packs it needs. Comfy Workflows resolves those declarations against the Comfy Registry. `cwf setup` prepares a **local** Comfy installation after you approve the exact plan.
 
 ```sh
 pnpm add @alice/some-workflow
@@ -18,19 +13,9 @@ cwf run @alice/some-workflow --url http://127.0.0.1:8188
 
 You should not have to hunt GitHub for missing custom nodes.
 
-Package format is host-agnostic. The same `inspect` / `resolve-nodes` / `setup` path works whether the tarball came from npm, GitHub Packages, a GitHub Release, or a local file. Core and already-published first-party packages may live on npm; new workflow packages may temporarily be distributed via GitHub while npm rate-limits new names. That is a publication detail, not a resolver assumption.
+Package format is host-agnostic. The same `inspect` / `resolve-nodes` / `setup` path works whether the tarball came from npm, GitHub Packages, a GitHub Release, or a local file. [Distribution](/product/distribution).
 
-Do **not** set a scope-wide `@stepupgaming:registry=https://npm.pkg.github.com`. That would also send the existing core package to GitHub Packages. Install the core from npm, then fetch a GitHub Packages workflow as a tarball:
-
-```sh
-pnpm add @stepupgaming/comfy-workflows
-npm pack @stepupgaming/comfy-workflow-h3-rtx-vsr@0.1.1 --registry=https://npm.pkg.github.com
-pnpm add ./stepupgaming-comfy-workflow-h3-rtx-vsr-0.1.1.tgz
-cwf inspect @stepupgaming/comfy-workflow-h3-rtx-vsr
-cwf setup @stepupgaming/comfy-workflow-h3-rtx-vsr --comfy <ComfyUI-path> --dry-run
-```
-
-GitHub Packages reads typically need a `read:packages` token at pack/install time. That token must not be committed.
+Do **not** set a scope-wide `@stepupgaming:registry=https://npm.pkg.github.com`. That would also send the existing core package to GitHub Packages.
 
 ## Security contract
 
@@ -38,18 +23,20 @@ Custom nodes are executable Python.
 
 - **`cwf run` never installs them.** Missing classes fail at compile/validate time.
 - **`cwf inspect` never installs them.** It only reports.
-- **`cwf init` never installs them.** With `--url` it may _discover_ **verified** registry metadata.
-- **Installation happens only through `cwf setup`** (or another explicitly invoked setup command).
+- **`cwf init` never installs them.** With `--url` it may discover **verified** registry metadata.
+- **Installation happens only through `cwf setup`.**
 - Default confirmation is **No**. `--yes` means “approve this **verified** plan”, not “allow arbitrary untrusted sources”.
 - Registered Comfy Registry packs are eligible for setup **after version-level verification**. Arbitrary Git URLs and pip specs are **not** auto-installed.
 - Workflow-package JavaScript is never executed to inspect dependency metadata.
 - Manifests are declarative: no `install`, `script`, `command`, `shell`, `pip`, or `git` fields.
 - Registry names, descriptions, and repository prose never become shell commands or argv.
 
+This SDK **consumes** `/object_info`. It does not author Python node implementations. [Consume vs author](/guide/consume-vs-author-nodes).
+
 ## nodeClasses vs nodePacks
 
 - **`requires.nodeClasses`** — the non-negotiable set of Comfy `class_type` names the graph uses. `cwf pack` requires this to match the IR.
-- **`requires.nodePacks`** — installable packs that _provide_ those classes. Identity is the Comfy Registry package id (for example `comfyui-videohelpersuite`).
+- **`requires.nodePacks`** — installable packs that provide those classes. Identity is the Comfy Registry package id (for example `comfyui-videohelpersuite`).
 
 ### Manifest spec versions
 
@@ -95,13 +82,13 @@ cwf resolve-nodes . --url http://127.0.0.1:8188 --write
 
 Without `--write`, nothing is mutated. With `--write`, **verified** packs are merged into `comfy.workflow.json` as specVersion 2.
 
-`GET https://api.comfy.org/nodes/search?comfy_node_search={className}` is the candidate universe (paginated). `GET /comfy-nodes/{className}/node` is an additional ranked hint only — never the complete set. Official Comfy source treats the ranked endpoint as a preempted “best” pack. It can attribute a core class to a third-party pack, hide other claimants, or 404 for a real custom class.
+`GET https://api.comfy.org/nodes/search?comfy_node_search={className}` is the candidate universe (paginated). `GET /comfy-nodes/{className}/node` is an additional ranked hint only, never the complete set. Official Comfy source treats the ranked endpoint as a preempted “best” pack. It can attribute a core class to a third-party pack, hide other claimants, or 404 for a real custom class.
 
 Verification pipeline:
 
 1. Required class
 2. Live `/object_info` (availability — a present class needs no install)
-3. Known-core evidence (bundled defs snapshot **plus** known newer stock classes such as `CLIPLoader` / `UNETLoader`)
+3. Known-core evidence (bundled defs snapshot plus known newer stock classes such as `CLIPLoader` / `UNETLoader`)
 4. Author-declared `provides` (explicit mapping — a claim, not proof)
 5. Registry search candidates (all pages) plus ranked hint
 6. Exact pack **version** (`GET /nodes/{id}/versions`, then `/install?version=`)
@@ -112,12 +99,12 @@ A publisher `source: "registry"` declaration is a **claim**. Only `provided === 
 
 Outcomes per class:
 
-| Outcome            | Meaning |
-| ------------------ | ------- |
-| `CORE`             | Known stock class. Never installed as a custom pack. |
-| `RESOLVED_CUSTOM`  | Exactly one **verified** pack/version supplies the class. |
-| `AMBIGUOUS`        | More than one **verified** pack supplies the class. Author must pick. `E_NODE_PACK_AMBIGUOUS`. |
-| `UNKNOWN`          | No verified provider. Not “definitely core” and not “definitely custom”. `E_NODE_PACK_UNKNOWN`. |
+| Outcome | Meaning |
+| ------- | ------- |
+| `CORE` | Known stock class. Never installed as a custom pack. |
+| `RESOLVED_CUSTOM` | Exactly one **verified** pack/version supplies the class. |
+| `AMBIGUOUS` | More than one **verified** pack supplies the class. Author must pick. `E_NODE_PACK_AMBIGUOUS`. |
+| `UNKNOWN` | No verified provider. Not “definitely core” and not “definitely custom”. `E_NODE_PACK_UNKNOWN`. |
 
 A ranked hint that does not list the class in that version’s definitions is dropped. `--write` never records an unverified guess.
 
@@ -125,7 +112,7 @@ Manual authoring when the registry cannot help:
 
 ```sh
 cwf node-pack add comfyui-videohelpersuite --provides VHS_LoadVideo,VHS_VideoCombine
-cwf node-pack map GemmyH3SaveAVLatent my-internal-pack
+cwf node-pack map SomeInternalNode my-internal-pack
 ```
 
 Manual entries still pass manifest validation. They are `source: "manual"` and are **not** auto-installed by `cwf setup`. Mapping is author intent, not a shell escape.
@@ -137,7 +124,7 @@ Manual entries still pass manifest validation. They are `source: "manual"` and a
 A manifest `version` of `^1.7.9` does **not** mean “install latest”. Setup resolves the range against published Registry versions and records:
 
 - `requestedVersion`: `^1.7.9`
-- `resolvedVersion`: `1.9.2` (example)
+- `resolvedVersion`: an exact published version that satisfies the range
 
 The installer is then invoked with the **exact** resolved version. If no published version satisfies the range: `E_NODE_PACK_VERSION_UNSATISFIED`. No silent latest.
 
@@ -177,14 +164,16 @@ Inspect JSON classifies required classes as `coreNodeClasses`, `resolvedCustomNo
 
 `cwf setup --url remote` without `--comfy` produces a plan and states that **local filesystem access** is required to apply it. There is no remote shell, no invented Manager HTTP install against a stranger's server.
 
-`--comfy` always wins over detection. Supported layouts: a git checkout (`main.py` + `comfy/` + venv), a portable Windows tree (`python_embeded` / inner `ComfyUI/`), and `COMFYUI_PATH`. Personal machine paths are never hard-coded. If more than one install could match, pass `--comfy`. Paths containing spaces are supported.
+`--comfy` always wins over detection. Supported layouts: a git checkout (`main.py` + `comfy/` + venv), a portable Windows tree (`python_embeded` / inner `ComfyUI/`), and `COMFYUI_PATH`. Personal machine paths are never hard-coded. If more than one install could match, pass `--comfy`. Paths containing spaces are supported. [Windows](/guide/windows).
 
 ## Models
 
-`requires.models` is reported (`status: unknown` in this increment). There is no model downloader. Model installation is a later increment; the setup-plan shape already has a `models` field so it can be added without redesign.
+`requires.models` is reported. There is no model downloader. `cwf setup` does not install checkpoints. [Models](/guide/models).
 
 ## JSON / agent mode
 
 `cwf inspect`, `cwf resolve-nodes`, and `cwf setup` all accept `--json`.
 
 Library entry: `@stepupgaming/comfy-workflows/deps` — `resolveNodeClasses`, `createSetupPlan`, `applySetupPlan`, `buildDependencyReport`.
+
+[Typed node codegen](/code/codegen) is how you **author** against custom nodes. This page is how you **declare and install** them.

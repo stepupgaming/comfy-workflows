@@ -11,6 +11,8 @@ on:
       - "README.md"
       - "ARCHITECTURE.md"
       - "src/nodes/gen/**"
+      - "scripts/docs-*.mjs"
+      - "package.json"
   workflow_dispatch:
 
 # Allow the deployment to succeed without blocking on overlapping runs.
@@ -34,6 +36,10 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Generate CLI/error fragments
+        run: pnpm docs:gen
+      - name: Check docs
+        run: pnpm docs:check
       - name: Build docs site
         run: pnpm --filter comfy-workflows-docs docs:build
       - uses: actions/configure-pages@v5

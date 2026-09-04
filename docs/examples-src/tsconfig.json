@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@stepupgaming/comfy-workflows": ["../../src/index.ts"],
+      "@stepupgaming/comfy-workflows/nodes": ["../../src/nodes/index.ts"],
+      "@stepupgaming/comfy-workflows/recipes": ["../../src/recipes/index.ts"],
+      "@stepupgaming/comfy-workflows/runtime": ["../../src/runtime/index.ts"],
+      "@stepupgaming/comfy-workflows/ir": ["../../src/ir/index.ts"],
+      "@stepupgaming/comfy-workflows/wfpack": ["../../src/wfpack/index.ts"],
+      "@stepupgaming/comfy-workflows/deps": ["../../src/deps/index.ts"]
+    }
+  },
+  "include": ["./**/*.ts"]
+}

@@ -1,32 +1,21 @@
-/* Comfy Workflows docs — brand overrides on top of the default VitePress theme.
- *
- * Palette: deep warm charcoal surfaces with a mint brand accent; the feature
- * grid tints each card after one layer of the SDK hierarchy. Both modes are
- * supported; accents stay hue-consistent across them.
- */
+/* Comfy Workflows docs — charcoal surfaces, mint brand. */
 
 :root {
-  /* brand — mint (light-mode variants are darkened for contrast on white) */
   --vp-c-brand-1: #0e8a5f;
   --vp-c-brand-2: #0c7a54;
   --vp-c-brand-3: #17a86f;
   --vp-c-brand-soft: rgba(23, 168, 111, 0.14);
 
-  /* hero */
   --vp-home-hero-name-color: transparent;
   --vp-home-hero-name-background: linear-gradient(120deg, #0e8a5f 0%, #2aa198 55%, #6a9fd8 100%);
 
-  /* surfaces */
   --vp-c-bg: #ffffff;
   --vp-c-bg-alt: #f6f8f7;
   --vp-c-bg-soft: #f3f6f4;
   --vp-c-divider: #e3e8e5;
   --vp-c-text-1: #1d2321;
 
-  /* code blocks: keep the dark surface in both modes for contrast */
   --vp-code-block-bg: #14161b;
-
-  /* sidebar active indicator */
   --vp-sidebar-bg-color: var(--vp-c-bg);
 }
 
@@ -40,7 +29,7 @@
   --vp-c-bg-alt: #101216;
   --vp-c-bg-soft: #1a1d24;
   --vp-c-divider: #262b33;
-  --vp-c-text-1: #e6ebE8;
+  --vp-c-text-1: #e6ebe8;
   --vp-c-text-2: #a3ada9;
   --vp-c-text-3: #6f7a76;
 
@@ -48,16 +37,6 @@
   --vp-sidebar-bg-color: var(--vp-c-bg);
 }
 
-/* Code block toolbar text stays legible on the dark surface */
-.vp-doc div[class*="language-"] + .vp-doc div[class*="language-"] {
-  margin-top: 0;
-}
-
-/* ---------------------------------------------------------------------------
- * Home feature grid — one accent per SDK layer (order matches index.md):
- * recipes(mint) · nodes(gold) · IR(periwinkle) · import(coral) ·
- * compile(violet) · runtime(sky)
- * ------------------------------------------------------------------------- */
 .VPFeatures .items .item .VPFeature {
   border-top: 1px solid var(--vp-c-divider);
   border-left: 3px solid transparent;
@@ -72,13 +51,10 @@
   .VPFeatures .items .item:nth-child(6) .VPFeature { border-left-color: #64b5f6; }
 }
 
-/* ---------------------------------------------------------------------------
- * Layer ribbon under the home feature grid
- * ------------------------------------------------------------------------- */
 .layer-strip {
-  max-width: 896px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 0 24px 64px;
+  padding: 0 24px 48px;
 }
 .layer-strip svg {
   width: 100%;
@@ -86,9 +62,49 @@
   display: block;
 }
 .layer-strip-caption {
-  margin: 0.25rem 0 0;
+  margin: 0.35rem 0 0;
   text-align: center;
   font-family: var(--vp-font-family-mono);
   font-size: 13px;
   color: var(--vp-c-text-3);
+}
+
+.home-code {
+  max-width: 960px;
+  margin: 0 auto 0;
+  padding: 0 24px;
+}
+.home-code-label {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  color: var(--vp-c-text-3);
+  margin: 0;
+}
+.VPHome .vp-doc {
+  max-width: 960px;
+  margin: 0 auto 1.5rem;
+  padding: 0 24px;
+}
+
+.vp-doc table {
+  display: table;
+  width: 100%;
+  font-size: 0.92rem;
+}
+.vp-doc table th {
+  white-space: nowrap;
+}
+
+.vp-doc .custom-block.warning,
+.vp-doc .custom-block.danger,
+.vp-doc .custom-block.tip,
+.vp-doc .custom-block.info {
+  border-radius: 8px;
+}
+
+@media (max-width: 639px) {
+  .VPHome .VPHero .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

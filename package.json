@@ -78,6 +78,10 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "codegen:core": "jiti scripts/run-codegen.mjs",
+    "docs:gen": "node scripts/docs-gen.mjs",
+    "docs:check": "node scripts/docs-gen.mjs && node scripts/docs-check.mjs && tsc --noEmit -p docs/examples-src/tsconfig.json && node scripts/docs-examples.mjs",
+    "docs:dev": "pnpm docs:gen && pnpm --filter comfy-workflows-docs docs:dev",
+    "docs:build": "pnpm docs:gen && pnpm --filter comfy-workflows-docs docs:build",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

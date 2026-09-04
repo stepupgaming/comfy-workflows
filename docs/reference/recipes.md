@@ -1,158 +1,53 @@
-# Recipes
+# Recipes reference
 
-Recipes are high-level operations that expand into full node graphs. They
-return template graphs — `ParamRef` placeholders survive every composition, so
-`hiresFix(withLora(tpl, …))` stays lazy until `instantiateTemplate`. All live
-in the root `@stepupgaming/comfy-workflows` entry point.
+All live on `@stepupgaming/comfy-workflows` and `@stepupgaming/comfy-workflows/recipes`.
 
-## textToImage
+Guide: [Recipes](/code/recipes). Example: [Composition](/examples/composition).
 
-The baseline recipe: checkpoint → prompt encodes → empty latent → KSampler →
-VAE decode → Save. One call, one graph. Returns a TEMPLATE graph:
-prompts/seed/dimensions may be `g.param()` placeholders; instantiate at run
-time with concrete values. Seeds are explicit by design — reproducibility is
-the default, not an option.
+## `textToImage(opts) → Graph`
 
-```ts
-function textToImage(opts: TextToImageOptions): Graph
-```
+Checkpoint → CLIP encodes → empty latent → KSampler → VAE decode → Save.
 
-`TextToImageOptions`: `checkpoint`, `positivePrompt` (string or `ParamRef`),
-`seed` (bigint/number/`ParamRef`), plus optional `negativePrompt`, `width`,
-`height`, `batch`, `steps`, `cfg`, `sampler`, `scheduler`, `denoise`,
-`clipStopAtLayer` (negative CLIP layer — SD1.x: `-1`, SDXL: `-2`), `loras`,
-`filenamePrefix`.
+`TextToImageOptions`: `checkpoint`, `positivePrompt`, `seed` (required), plus optional `negativePrompt`, `width`, `height`, `batch`, `steps`, `cfg`, `sampler`, `scheduler`, `denoise`, `clipStopAtLayer`, `loras`, `filenamePrefix`.
 
-## img2img
+Values may be `ParamRef` (checkpoint, prompts, seed, width/height/batch).
 
-LoadImage → VAE Encode → KSampler(denoise) → decode → save.
+## `img2img(opts) → Graph`
 
-```ts
-function img2img(opts: {
-  checkpoint: string;
-  image: ImageInput;
-  positivePrompt: string;
-  negativePrompt?: string;
-  denoise?: number; // default 0.7
-  steps?: number; cfg?: number; sampler?: string; scheduler?: string;
-  seed: bigint | number;
-  loras?: LoraSpec[];
-  filenamePrefix?: string;
-}): Graph
-```
+LoadImage → VAE encode → KSampler(denoise, default 0.7) → decode → save.
 
-`image` is a local path (`AssetRef` — staged automatically by the runtime),
-an external output ref, or a node id.
+`image` is `AssetRef` \| path string \| output ref.
 
-## inpaint
+## `inpaint(opts) → Graph`
 
-LoadImage + LoadImageMask → VAE Encode (for Inpainting) → KSampler.
+LoadImage + LoadImageMask → VAEEncodeForInpaint → KSampler.
 
-```ts
-function inpaint(opts: {
-  checkpoint: string;
-  image: ImageInput;
-  mask: ImageInput;
-  maskChannel?: "alpha" | "red" | "green" | "blue"; // default "alpha"
-  positivePrompt: string;
-  negativePrompt?: string;
-  growMaskBy?: number; // default 6
-  steps?: number; cfg?: number; sampler?: string; scheduler?: string;
-  seed: bigint | number;
-  denoise?: number;
-  filenamePrefix?: string;
-}): Graph
-```
+`maskChannel` default `"alpha"`. `growMaskBy` default `6`.
 
-## outpaint
+## `outpaint(opts) → Graph`
 
-Pad Image for Outpainting → VAE Encode (for Inpainting) → KSampler.
+PadImageForOutpainting → VAEEncodeForInpaint → KSampler.
 
-```ts
-function outpaint(opts: {
-  checkpoint: string;
-  image: ImageInput;
-  left?: number; top?: number; right?: number; bottom?: number;
-  feathering?: number; // default 20
-  positivePrompt: string;
-  negativePrompt?: string;
-  steps?: number; cfg?: number; sampler?: string; scheduler?: string;
-  seed: bigint | number;
-  filenamePrefix?: string;
-}): Graph
-```
+`left` / `top` / `right` / `bottom`, `feathering` default `20`.
 
-## Composable transforms
+## `withLora(graph, loras) → Graph`
 
-These operate on parametrized template graphs (placeholders survive), so
-composition stays lazy.
+`LoraSpec`: `{ lora_name, strength_model?, strength_clip? }`. Accepts one spec or an array. Preserves ParamRefs.
 
-### withLora
+## `withControlNet(graph, opts) → Graph`
 
-```ts
-function withLora(base: Graph, loras: LoraSpec | LoraSpec[]): Graph
-```
+Inserts ControlNetLoader + ControlNetApplyAdvanced on the first KSampler.
 
-Stacks LoRA loaders between the graph's model/clip sources and their
-consumers. `LoraSpec`: `{ lora_name, strength_model?, strength_clip? }`.
+## `hiresFix(graph, opts?) → Graph`
 
-### applyLoras
+LatentUpscaleBy + KSamplerAdvanced before the VAEDecode that consumes the last sampler.
 
-```ts
-function applyLoras(g: Graph, loras: LoraSpec[]): void
-```
+`scaleBy` default `1.5`. `denoise` default `0.5`.
 
-The in-place core of `withLora`. Sequential calls chain naturally: loader N
-takes whatever the consumers pointed at after loader N−1 was wired.
+## `upscale(graph, opts) → Graph`
 
-### withControlNet
+Pixel upscale-model pass (see source for options).
 
-Inserts a ControlNet application on the (first) sampler's conditioning.
+## `explainGraph(graph) → string`
 
-```ts
-function withControlNet(base: Graph, opts: {
-  control_net_name: string;
-  image: ImageInput;
-  strength?: number;      // default 1
-  startPercent?: number;  // default 0
-  endPercent?: number;    // default 1
-}): Graph
-```
-
-### hiresFix
-
-Inserts LatentUpscaleBy + a second KSamplerAdvanced pass between the sampler
-and its VAEDecode. `denoise` controls how much the second pass re-samples
-(0.35–0.55 is the usual range).
-
-```ts
-function hiresFix(base: Graph, opts?: {
-  scaleBy?: number;       // default 1.5
-  denoise?: number;       // default 0.5
-  upscaleMethod?: string; // default "bilinear"
-  noiseSeed?: bigint | number;
-}): Graph
-```
-
-### upscale
-
-Appends a model-based image upscale (and optional exact resize) after the
-final VAEDecode, saving to a new output.
-
-```ts
-function upscale(base: Graph, opts: {
-  model_name: string;
-  resizeTo?: { width: number; height: number };
-  filenamePrefix?: string;
-}): Graph
-```
-
-## explainGraph
-
-```ts
-function explainGraph(g: Graph): string
-```
-
-Human/agent-readable expansion of a template or graph: nodes, params,
-connections, template params/ports/outputs. The observability surface for
-agents — "what did hiresFix actually create?"
+Human/agent-readable expansion.

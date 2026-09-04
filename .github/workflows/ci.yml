@@ -26,3 +26,4 @@ jobs:
       - run: pnpm build:packages && git diff --exit-code packages/*/workflow.ir.json packages/*/comfy.workflow.json
       # Core tarball must contain exactly the publishable set.
       - run: pnpm pack --dry-run
+      - run: pnpm docs:check
