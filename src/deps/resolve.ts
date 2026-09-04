@@ -197,7 +197,7 @@ export async function resolveNodeClasses(opts: ResolveNodesOptions): Promise<Res
         name: p.name ?? meta.name,
         repository: p.repository ?? meta.repository,
         version: p.version ?? (ver.resolved !== undefined ? `^${ver.resolved}` : undefined),
-        source: p.source ?? "manual",
+        source: p.source ?? "registry",
       };
       resolutions.push({
         className,

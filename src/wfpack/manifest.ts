@@ -283,6 +283,9 @@ export function parseNodePack(
     if (value["source"] !== "registry" && value["source"] !== "manual")
       fail(`${where}.source must be "registry" or "manual"`);
     pack.source = value["source"];
+  } else {
+    // v2 rich object with source omitted → registry claim (still not install proof).
+    pack.source = "registry";
   }
   const forbidden = ["install", "script", "command", "shell", "pip", "git"];
   for (const k of forbidden) {
@@ -305,7 +308,7 @@ export function serializeNodePacks(
     if (p.repository !== undefined) o.repository = p.repository;
     if (p.provides !== undefined && p.provides.length > 0) o.provides = p.provides;
     if (p.optional === true) o.optional = true;
-    if (p.source !== undefined) o.source = p.source;
+    o.source = p.source ?? "registry";
     return o;
   });
 }

@@ -60,6 +60,17 @@ Custom nodes are executable Python.
 
 Existing published v1 packages remain valid. Rich dependency metadata is **specVersion 2**. The parser never silently writes objects under specVersion 1.
 
+Source defaults:
+
+| Wire form | Normalized `source` |
+| --------- | ------------------- |
+| v1 bare string id | `manual` |
+| v2 object with `source` omitted | `registry` (a claim, not install proof) |
+| v2 `source: "manual"` | explicit manual |
+| v2 `source: "registry"` | explicit registry claim |
+
+Automatic installation still requires positive per-version Registry verification. An omitted v2 source is not a skip-install signal.
+
 A v2 pack entry:
 
 ```json

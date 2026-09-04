@@ -319,6 +319,22 @@ describe("manifest nodePacks schema", () => {
     ).toThrow(/specVersion 2/);
   });
 
+  it("v2 omitted source defaults to registry; explicit manual is preserved", () => {
+    const omitted = parseNodePack({ id: "comfyui-videohelpersuite", version: "^1.8.0" });
+    expect(omitted.source).toBe("registry");
+    const explicit = parseNodePack({ id: "gemmy-h3-context", source: "manual" });
+    expect(explicit.source).toBe("manual");
+    const v2 = parseWorkflowManifest({
+      ...BASE_MANIFEST,
+      specVersion: 2,
+      requires: {
+        ...BASE_MANIFEST.requires,
+        nodePacks: [{ id: "comfyui-videohelpersuite", provides: ["VHS_LoadVideo"] }],
+      },
+    });
+    expect(v2.requires.nodePacks[0]?.source).toBe("registry");
+  });
+
   it("new registry-id metadata parses", () => {
     const m = parseWorkflowManifest({
       ...BASE_MANIFEST,
