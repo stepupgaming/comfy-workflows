@@ -1,6 +1,6 @@
 # Agent instructions for this repository
 
-You are modifying **Comfy Workflows** (`@stepupgaming/comfy-workflows`), a TypeScript SDK and `cwf` CLI. This file is for work **in this repo**. If you are using the SDK in another project, read `skills/comfy-workflows/SKILL.md` instead.
+You are modifying **Comfy Workflows** (`@stepupgaming/comfy-workflows`), a TypeScript SDK and `cwf` CLI. This file is for work **in this repo**. If you are using the SDK in another project, read `skills/comfy-workflows/SKILL.md` (graphs) and `skills/comfy-custom-nodes/SKILL.md` (codegen / setup).
 
 Unofficial project. Not affiliated with or endorsed by Comfy Org. MIT. Do not publish a `comfy` binary.
 
@@ -91,7 +91,7 @@ CI also requires:
 | Docs | `docs/` (VitePress, `base: /comfy-workflows/`) |
 | Doc examples (typechecked) | `docs/examples-src/` |
 | Release tooling | `scripts/release-*.mjs`, `distribution/`, `.github/workflows/` |
-| Agent skill (SDK users) | `skills/comfy-workflows/` |
+| Agent skills (SDK users) | `skills/comfy-workflows/`, `skills/comfy-custom-nodes/` |
 | Agent evals | `evals/agents/` |
 
 ## Before changing subsystem X

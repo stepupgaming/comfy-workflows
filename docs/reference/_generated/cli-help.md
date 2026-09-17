@@ -20,6 +20,6 @@ cwf — code-first, typed, composable workflows for ComfyUI
   cwf setup <package-or-path> --comfy <Comfy-path> [--yes] [--dry-run] [--json]
   cwf explain <file | workflow.ts>   # what does this expand into?
   cwf catalog [query] [--from catalog.json]
-  cwf agent install [--project dir] [--force] [--json]  # copy bundled skill to .agents/skills
-  cwf agent check [--project dir] [--json]              # project skill vs installed package
+  cwf agent install [--project dir] [--force] [--json]  # copy bundled skills to .agents/skills
+  cwf agent check [--project dir] [--json]              # project skills vs installed package
 ```

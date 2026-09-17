@@ -24,7 +24,7 @@ pnpm agent:check
 ## Agent surfaces that are not this site
 
 - Repo contributors: root `AGENTS.md`
-- SDK users in another app: `skills/comfy-workflows/SKILL.md`
+- SDK users in another app: `skills/comfy-workflows/SKILL.md` (graphs) and `skills/comfy-custom-nodes/SKILL.md` (codegen / setup)
 - Do not collapse those into VitePress pages.
 
 The human page for people configuring agents is `docs/guide/agents.md`.

@@ -23,12 +23,15 @@ function fail(msg) {
 
 const skillDir = join(root, "skills", "comfy-workflows");
 const skillMd = join(skillDir, "SKILL.md");
+const customSkillDir = join(root, "skills", "comfy-custom-nodes");
+const customSkillMd = join(customSkillDir, "SKILL.md");
 const requiredRoot = [
   "AGENTS.md",
   "docs/AGENTS.md",
   "src/deps/AGENTS.md",
   "packages/AGENTS.md",
   "skills/comfy-workflows/SKILL.md",
+  "skills/comfy-custom-nodes/SKILL.md",
   "docs/public/llms.txt",
   "docs/public/llms-full.txt",
   "docs/public/agent-index.json",
@@ -43,9 +46,7 @@ const requiredRefs = [
   "mental-model.md",
   "code-first.md",
   "import-existing.md",
-  "generated-nodes.md",
   "parameters.md",
-  "custom-nodes.md",
   "product-integration.md",
   "packages.md",
   "cli.md",
@@ -55,6 +56,12 @@ const requiredRefs = [
 for (const f of requiredRefs) {
   if (!existsSync(join(skillDir, "references", f))) fail(`missing skill reference ${f}`);
 }
+const customRefs = ["custom-nodes.md", "generated-nodes.md"];
+for (const f of customRefs) {
+  if (!existsSync(join(customSkillDir, "references", f))) {
+    fail(`missing custom-node skill reference ${f}`);
+  }
+}
 
 const skillText = existsSync(skillMd) ? await readFile(skillMd, "utf8") : "";
 if (!skillText.startsWith("---")) fail("SKILL.md missing YAML frontmatter");
@@ -63,6 +70,16 @@ if (fmEnd < 0) fail("SKILL.md frontmatter not closed");
 const fm = skillText.slice(3, fmEnd);
 if (!/^name:\s*comfy-workflows\s*$/m.test(fm)) fail("SKILL.md frontmatter name must be comfy-workflows");
 if (!/description:/m.test(fm)) fail("SKILL.md frontmatter missing description");
+
+const customText = existsSync(customSkillMd) ? await readFile(customSkillMd, "utf8") : "";
+if (!customText.startsWith("---")) fail("comfy-custom-nodes SKILL.md missing YAML frontmatter");
+const customFmEnd = customText.indexOf("\n---", 3);
+if (customFmEnd < 0) fail("comfy-custom-nodes SKILL.md frontmatter not closed");
+const customFm = customText.slice(3, customFmEnd);
+if (!/^name:\s*comfy-custom-nodes\s*$/m.test(customFm)) {
+  fail("comfy-custom-nodes SKILL.md frontmatter name must be comfy-custom-nodes");
+}
+if (!/description:/m.test(customFm)) fail("comfy-custom-nodes SKILL.md missing description");
 
 if (!pkg.files?.includes("skills")) {
   fail('package.json "files" must include "skills" so the tarball ships the skill');
@@ -119,7 +136,10 @@ async function walkMd(dir) {
   return out;
 }
 
-const skillFiles = existsSync(skillDir) ? await walkMd(skillDir) : [];
+const skillFiles = [
+  ...(existsSync(skillDir) ? await walkMd(skillDir) : []),
+  ...(existsSync(customSkillDir) ? await walkMd(customSkillDir) : []),
+];
 const agentFacing = [
   join(root, "AGENTS.md"),
   join(root, "docs", "AGENTS.md"),
@@ -201,7 +221,8 @@ const requiredPhrases = [
   [skillText, "setup", "SKILL.md"],
   [skillText, "GitHub", "SKILL.md"],
   [await readFile(join(skillDir, "references", "product-integration.md"), "utf8"), "compiler", "product-integration.md"],
-  [await readFile(join(skillDir, "references", "custom-nodes.md"), "utf8"), "inspect", "custom-nodes.md"],
+  [await readFile(join(customSkillDir, "references", "custom-nodes.md"), "utf8"), "inspect", "custom-nodes.md"],
+  [customText, "codegen", "comfy-custom-nodes SKILL.md"],
 ];
 for (const [text, needle, label] of requiredPhrases) {
   if (!text.includes(needle)) fail(`${label} missing ${JSON.stringify(needle)}`);

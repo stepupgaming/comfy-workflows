@@ -1,6 +1,6 @@
 # Code-first workflows
 
-Need Node.js ≥ 22. Bundled `@stepupgaming/comfy-workflows/nodes` covers core SD1.x classes. Custom nodes need codegen from the target Comfy.
+Need Node.js ≥ 22. Bundled `@stepupgaming/comfy-workflows/nodes` covers core SD1.x classes. Custom nodes: skill `comfy-custom-nodes` (snapshot + codegen from the target Comfy).
 
 ## Steps
 

@@ -1,12 +1,12 @@
 ---
 name: comfy-workflows
 description: >
-  Use when building, modifying, compiling, packaging, running, importing,
-  or integrating ComfyUI workflows through @stepupgaming/comfy-workflows,
-  including typed custom-node codegen, Graph IR, workflow packages,
-  ParamRef templates, the cwf CLI, and non-Node (Python/Rust/Go) product
-  integration. Trigger on ComfyUI graphs as code, workflow.json conversion,
-  custom-node setup, or "do we need Node in production?"
+  Use when creating, editing, compiling, packaging, importing, or running
+  ComfyUI graphs as TypeScript through @stepupgaming/comfy-workflows:
+  ir.build.ts / workflow.ts, Graph IR, ParamRef, recipes, cwf compile /
+  validate / run / pack, and non-Node product binders. Trigger on workflow.json
+  conversion, "edit the graph", topology vs runtime params, or "do we need Node
+  in production?" Custom nodes, codegen, and cwf setup: skill comfy-custom-nodes.
 ---
 
 # Comfy Workflows
@@ -31,11 +31,10 @@ Versioned deep-doc links for **this package version** are in `references/_links.
 | ----------- | ---- |
 | Existing `workflow.json` / API JSON | `references/import-existing.md` |
 | Create or edit a code-authored graph | `references/code-first.md` |
-| Custom nodes, missing classes, setup | `references/custom-nodes.md` |
+| Custom nodes, missing classes, codegen, `cwf setup` | skill `comfy-custom-nodes` |
 | Rust / Python / Go / C# product | `references/product-integration.md` |
 | Package / publish | `references/packages.md` |
-| CLI / `--json` / inspect | `references/cli.md` |
-| Typed node codegen | `references/generated-nodes.md` |
+| CLI / `--json` | `references/cli.md` |
 | Seeds, ParamRef, runtime values | `references/parameters.md` |
 | Errors, uncertainty | `references/troubleshooting.md` |
 | Mental model | `references/mental-model.md` |
@@ -71,13 +70,7 @@ A Python/Rust binder replaces `{"$param":"..."}`. It does not grow graphs.
 
 ## Custom nodes
 
-1. Snapshot live `/object_info`.
-2. `cwf codegen` typed wrappers.
-3. `g.add(GeneratedSpec, { ... })`.
-
-`rawNode` is an escape hatch when the class is missing from the snapshot or `/object_info` cannot describe it. It is **not** the default custom-node API. It does not download or execute Python.
-
-Do not invent `class_type` strings. Do not guess which GitHub repo owns a class. Resolution is Registry-verified (`cwf resolve-nodes`). Ambiguous stays ambiguous. Unknown stays unknown.
+Load skill `comfy-custom-nodes`. Snapshot + codegen + `g.add`. `rawNode` is not the default. `cwf setup` is the only installer.
 
 ## Non-Node products
 
@@ -109,13 +102,12 @@ The **format** is npm-compatible (`package.json` + `comfy.workflow.json` + `work
 ### Create a new code-first workflow
 
 1. Determine the target Comfy (`--url`).
-2. `cwf snapshot` if defs are missing or stale.
-3. `cwf codegen --from object_info.json -o src/nodes/gen`.
-4. Create `ir.build.ts` or `workflow.ts`.
-5. `g.add` generated specs. Use `paramRef` for runtime values.
-6. `cwf compile` / `cwf validate`.
-7. `cwf run` only if the user wants a live queue.
-8. Do not touch generated IR.
+2. If the graph needs custom classes, follow skill `comfy-custom-nodes` (snapshot + codegen).
+3. Create `ir.build.ts` or `workflow.ts`.
+4. `g.add` generated specs. Use `paramRef` for runtime values.
+5. `cwf compile` / `cwf validate`.
+6. `cwf run` only if the user wants a live queue.
+7. Do not touch generated IR.
 
 ### Modify an existing code-authored workflow
 
@@ -144,10 +136,8 @@ That is a **different graph**. Author another builder / package (or a real `if` 
 
 | Symptom | Do |
 | ------- | -- |
-| Unknown node class | Snapshot `/object_info`. Do not guess the name. |
-| Generated wrapper missing a class | Recapture + codegen. Then `rawNode` only if still absent. |
+| Unknown node class / missing pack | Skill `comfy-custom-nodes`. Do not guess names or clone GitHub. |
 | Type mismatch | Read declared input/output types. `unsafe` only with explicit user intent. |
-| Missing custom pack | `cwf inspect --json`, `cwf resolve-nodes --json`, `cwf setup --dry-run --json`. Do not invent mapping. Do not `--yes` without user intent. |
 | Need Python/Rust in production | Generated artifact + narrow binder. Not a new compiler. |
 | Seed > 2^53 | `bigint` / `{"$int":"..."}`. Never `Number` / `JSON.parse` the compiled prompt. |
 | User asks where to edit a generated file | Point at `ir.build.ts` / `workflow.ts`. Refuse to patch IR. |

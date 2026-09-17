@@ -20,6 +20,7 @@ import { join, relative, resolve, sep } from "node:path";
 import { ComfyError, ErrorCodes } from "../errors.js";
 
 export const SKILL_NAME = "comfy-workflows";
+export const BUNDLED_SKILL_NAMES = ["comfy-workflows", "comfy-custom-nodes"] as const;
 export const SKILL_META_FILENAME = ".comfy-workflows-skill.json";
 export const CORE_PACKAGE = "@stepupgaming/comfy-workflows";
 
@@ -94,12 +95,12 @@ export function hashSkillDir(dir: string): string {
   return h.digest("hex");
 }
 
-export function bundledSkillDir(pkgRoot: string): string {
-  return join(pkgRoot, "skills", SKILL_NAME);
+export function bundledSkillDir(pkgRoot: string, skillName: string = SKILL_NAME): string {
+  return join(pkgRoot, "skills", skillName);
 }
 
-export function projectSkillDir(projectRoot: string): string {
-  return join(resolve(projectRoot), ".agents", "skills", SKILL_NAME);
+export function projectSkillDir(projectRoot: string, skillName: string = SKILL_NAME): string {
+  return join(resolve(projectRoot), ".agents", "skills", skillName);
 }
 
 export function readCoreVersion(pkgRoot: string): string {
@@ -115,8 +116,8 @@ export function readCoreVersion(pkgRoot: string): string {
   return pj.version;
 }
 
-export function assertBundledSkill(pkgRoot: string): string {
-  const bundled = bundledSkillDir(pkgRoot);
+export function assertBundledSkill(pkgRoot: string, skillName: string = SKILL_NAME): string {
+  const bundled = bundledSkillDir(pkgRoot, skillName);
   const skillMd = join(bundled, "SKILL.md");
   if (!existsSync(skillMd) || !statSync(skillMd).isFile()) {
     throw new ComfyError({
@@ -156,10 +157,12 @@ function readMeta(dest: string): SkillInstallMeta | null {
 export function inspectAgentSkill(opts: {
   projectRoot: string;
   pkgRoot: string;
+  skillName?: string;
 }): AgentSkillReport {
+  const skillName = opts.skillName ?? SKILL_NAME;
   const projectRoot = resolve(opts.projectRoot);
-  const bundled = assertBundledSkill(opts.pkgRoot);
-  const destination = projectSkillDir(projectRoot);
+  const bundled = assertBundledSkill(opts.pkgRoot, skillName);
+  const destination = projectSkillDir(projectRoot, skillName);
   const coreVersion = readCoreVersion(opts.pkgRoot);
   const bundledHash = hashSkillDir(bundled);
   const destExists = existsSync(destination) && statSync(destination).isDirectory();
@@ -167,7 +170,7 @@ export function inspectAgentSkill(opts: {
   const installed = destExists && existsSync(skillMd) && statSync(skillMd).isFile();
   if (!installed) {
     return {
-      skill: SKILL_NAME,
+      skill: skillName,
       coreVersion,
       installed: false,
       installedVersion: null,
@@ -185,7 +188,7 @@ export function inspectAgentSkill(opts: {
   else if (meta !== null && meta.contentHash === contentHash) status = "outdated";
   else status = "modified";
   return {
-    skill: SKILL_NAME,
+    skill: skillName,
     coreVersion,
     installed: true,
     installedVersion: meta?.packageVersion ?? null,
@@ -221,7 +224,9 @@ export function installAgentSkill(opts: {
   pkgRoot: string;
   force?: boolean;
   now?: string;
+  skillName?: string;
 }): AgentSkillReport {
+  const skillName = opts.skillName ?? SKILL_NAME;
   const report = inspectAgentSkill(opts);
   if (report.status === "modified" && opts.force !== true) {
     throw new ComfyError({
@@ -237,14 +242,14 @@ export function installAgentSkill(opts: {
       meta !== null &&
       meta.packageVersion === report.coreVersion &&
       meta.contentHash === report.bundledHash &&
-      meta.skillName === SKILL_NAME
+      meta.skillName === skillName
     ) {
       return { ...report, action: "unchanged" };
     }
     writeMeta(report.destination, {
       package: CORE_PACKAGE,
       packageVersion: report.coreVersion,
-      skillName: SKILL_NAME,
+      skillName,
       contentHash: report.bundledHash,
       installedAt: opts.now ?? new Date().toISOString(),
     });
@@ -262,7 +267,7 @@ export function installAgentSkill(opts: {
   writeMeta(report.destination, {
     package: CORE_PACKAGE,
     packageVersion: report.coreVersion,
-    skillName: SKILL_NAME,
+    skillName,
     contentHash: report.bundledHash,
     installedAt: opts.now ?? new Date().toISOString(),
   });
@@ -274,4 +279,24 @@ export function installAgentSkill(opts: {
         ? "updated"
         : "installed";
   return { ...next, action };
+}
+
+export function inspectAllAgentSkills(opts: {
+  projectRoot: string;
+  pkgRoot: string;
+}): AgentSkillReport[] {
+  return BUNDLED_SKILL_NAMES.map((skillName) =>
+    inspectAgentSkill({ ...opts, skillName }),
+  );
+}
+
+export function installAllAgentSkills(opts: {
+  projectRoot: string;
+  pkgRoot: string;
+  force?: boolean;
+  now?: string;
+}): AgentSkillReport[] {
+  return BUNDLED_SKILL_NAMES.map((skillName) =>
+    installAgentSkill({ ...opts, skillName }),
+  );
 }

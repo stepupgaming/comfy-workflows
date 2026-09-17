@@ -5,7 +5,7 @@ Three different surfaces. Do not collapse them.
 | Who | File | Job |
 | --- | ---- | --- |
 | Agent modifying this repository | [AGENTS.md](https://github.com/stepupgaming/comfy-workflows/blob/main/AGENTS.md) | Repo invariants, commands, source map |
-| Agent using the SDK in another app | Skill in the installed package: `node_modules/@stepupgaming/comfy-workflows/skills/comfy-workflows/SKILL.md` | Operating manual + progressive references |
+| Agent using the SDK in another app | Skills in the installed package: `skills/comfy-workflows/` (graphs) and `skills/comfy-custom-nodes/` (codegen / setup) | Operating manuals + progressive references |
 | Agent that found the docs site | [llms.txt](/llms.txt) | Routing to raw Markdown |
 
 Deeper single-file digest: [llms-full.txt](/llms-full.txt). Discovery JSON: [agent-index.json](/agent-index.json).
@@ -19,6 +19,8 @@ After `pnpm add @stepupgaming/comfy-workflows` the tarball contains:
 ```
 skills/comfy-workflows/SKILL.md
 skills/comfy-workflows/references/
+skills/comfy-custom-nodes/SKILL.md
+skills/comfy-custom-nodes/references/
 ```
 
 Compatible Agent Skills clients look in `.agents/skills/`, not `node_modules`. Copy the bundled skill into the project:
@@ -28,11 +30,11 @@ cwf agent install
 cwf agent check --json
 ```
 
-That writes `.agents/skills/comfy-workflows/` from the **installed** package (same version as the SDK). Rerun after upgrading the core. Local edits are not overwritten unless you pass `--force`. There is no `postinstall` hook. This does not mutate `AGENTS.md`.
+That writes `.agents/skills/comfy-workflows/` and `.agents/skills/comfy-custom-nodes/` from the **installed** package (same version as the SDK). Rerun after upgrading the core. Local edits are not overwritten unless you pass `--force`. There is no `postinstall` hook. This does not mutate `AGENTS.md`.
 
 Some clients also have their own skill directories. The portable project location this command uses is `.agents/skills/`.
 
-The skill teaches: edit TypeScript not generated IR, codegen for custom nodes, `rawNode` as escape hatch, no second compiler, explicit `cwf setup`, GitHub-canonical distribution.
+`comfy-workflows` teaches: edit TypeScript not generated IR, topology vs ParamRef, no second compiler, packages. `comfy-custom-nodes` teaches: snapshot + codegen, `rawNode` as escape hatch, Registry resolution, explicit `cwf setup`.
 
 Deep human-doc links from an **installed** skill pin the matching git tag (`references/_links.md`) so an old package does not point at newer APIs. The live `llms.txt` on this site tracks `main`.
 

@@ -17,6 +17,7 @@ import {
   hashSkillDir,
   inspectAgentSkill,
   installAgentSkill,
+  installAllAgentSkills,
   projectSkillDir,
 } from "../src/cli/agent-skill.js";
 
@@ -34,7 +35,11 @@ function skillMd(root: string): string {
 describe("agent skill install (module)", () => {
   it("copies SKILL.md and references into .agents/skills/comfy-workflows", () => {
     const root = project();
-    const report = installAgentSkill({ projectRoot: root, pkgRoot: repoRoot, now: "2026-09-04T00:00:00.000Z" });
+    const report = installAgentSkill({
+      projectRoot: root,
+      pkgRoot: repoRoot,
+      now: "2026-09-04T00:00:00.000Z",
+    });
     expect(report.status).toBe("current");
     expect(report.action).toBe("installed");
     expect(report.coreVersion).toBe(
@@ -121,6 +126,25 @@ describe("agent skill install (module)", () => {
     expect(existsSync(skillMd(root))).toBe(true);
   });
 
+  it("installAll copies both bundled skills", () => {
+    const root = project();
+    const reports = installAllAgentSkills({
+      projectRoot: root,
+      pkgRoot: repoRoot,
+      now: "2026-09-04T00:00:00.000Z",
+    });
+    expect(reports.map((r) => r.skill).sort()).toEqual([
+      "comfy-custom-nodes",
+      "comfy-workflows",
+    ]);
+    expect(reports.every((r) => r.status === "current" && r.action === "installed")).toBe(true);
+    expect(existsSync(join(projectSkillDir(root, "comfy-workflows"), "SKILL.md"))).toBe(true);
+    expect(existsSync(join(projectSkillDir(root, "comfy-custom-nodes"), "SKILL.md"))).toBe(true);
+    expect(
+      existsSync(join(projectSkillDir(root, "comfy-custom-nodes"), "references", "custom-nodes.md")),
+    ).toBe(true);
+  });
+
   it("check reports missing before install", () => {
     const root = project();
     const report = inspectAgentSkill({ projectRoot: root, pkgRoot: repoRoot });
@@ -152,21 +176,18 @@ describe("cwf agent CLI", () => {
     expect(inst.code).toBe(0);
     const body = JSON.parse(inst.stdout.slice(inst.stdout.indexOf("{"))) as {
       ok: boolean;
-      status: string;
-      coreVersion: string;
-      skill: string;
+      skills: Array<{ skill: string; status: string; coreVersion: string }>;
     };
     expect(body.ok).toBe(true);
-    expect(body.skill).toBe("comfy-workflows");
-    expect(body.status).toBe("current");
+    const names = body.skills.map((s) => s.skill).sort();
+    expect(names).toEqual(["comfy-custom-nodes", "comfy-workflows"]);
+    expect(body.skills.every((s) => s.status === "current")).toBe(true);
     const check = await cwf(["agent", "check", "--project", root, "--json"]);
     expect(check.code).toBe(0);
     const st = JSON.parse(check.stdout.slice(check.stdout.indexOf("{"))) as {
-      status: string;
-      installed: boolean;
+      skills: Array<{ status: string; installed: boolean }>;
     };
-    expect(st.installed).toBe(true);
-    expect(st.status).toBe("current");
+    expect(st.skills.every((s) => s.installed && s.status === "current")).toBe(true);
   });
 
   it("help lists cwf agent", async () => {

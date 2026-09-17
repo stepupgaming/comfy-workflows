@@ -18,7 +18,10 @@ const rawTag = `https://raw.githubusercontent.com/${ownerRepo}/v${version}`;
 const rawMain = `https://raw.githubusercontent.com/${ownerRepo}/main`;
 
 const publicDir = join(root, "docs", "public");
-const skillRefDir = join(root, "skills", "comfy-workflows", "references");
+const skillRefDirs = [
+  join(root, "skills", "comfy-workflows", "references"),
+  join(root, "skills", "comfy-custom-nodes", "references"),
+];
 
 const TOPICS = [
   ["mental-model", "docs/concepts/mental-model.md", "Mental model"],
@@ -108,7 +111,7 @@ const FULL_ORDER = [
 ];
 
 await mkdir(publicDir, { recursive: true });
-await mkdir(skillRefDir, { recursive: true });
+for (const dir of skillRefDirs) await mkdir(dir, { recursive: true });
 
 const llms = [
   "# Comfy Workflows",
@@ -117,7 +120,7 @@ const llms = [
   "",
   `Core package: @stepupgaming/comfy-workflows@${version}`,
   `Human docs: ${site}/`,
-  `Skill (in the installed package): skills/comfy-workflows/SKILL.md`,
+  `Skills (in the installed package): skills/comfy-workflows/SKILL.md · skills/comfy-custom-nodes/SKILL.md`,
   `Repo instructions (contributors): ${rawMain}/AGENTS.md`,
   "",
   "## Critical rules",
@@ -255,7 +258,9 @@ for (const [key, rel, title] of TOPICS) {
   linkLines.push(`- **${title}** (\`${key}\`): ${rawTag}/${rel}`);
 }
 linkLines.push("");
-await writeFile(join(skillRefDir, "_links.md"), linkLines.join("\n"));
+for (const dir of skillRefDirs) {
+  await writeFile(join(dir, "_links.md"), linkLines.join("\n"));
+}
 
 process.stdout.write(
   `agent-docs: llms.txt, llms-full.txt, agent-index.json, skill _links.md (v${version})\n`,

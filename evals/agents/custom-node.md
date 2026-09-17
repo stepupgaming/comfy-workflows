@@ -1,7 +1,7 @@
 # Eval: use a custom node from object_info
 
 TASK:
-The user's Comfy already has a custom node class visible in `/object_info`. Add it to the graph.
+The user's Comfy already has a custom node class visible in `/object_info`. Add it to the graph. Follow skill `comfy-custom-nodes`.
 
 PASS:
 - Snapshots object_info and runs codegen (or uses an existing generated registry)

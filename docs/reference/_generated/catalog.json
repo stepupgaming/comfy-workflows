@@ -1,6 +1,6 @@
 {
-  "version": "0.2.15",
-  "generatedAt": "2026-09-04T19:35:42.468Z",
+  "version": "0.2.16",
+  "generatedAt": "2026-09-17T05:40:42.167Z",
   "errorCodes": [
     "E_UNKNOWN_NODE_TYPE",
     "E_MISSING_INPUT",
