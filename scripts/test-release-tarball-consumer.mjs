@@ -94,12 +94,22 @@ if (agentInstall.code !== 0) {
 }
 const projectSkill = join(consumer, ".agents", "skills", "comfy-workflows", "SKILL.md");
 if (!existsSync(projectSkill)) throw new Error(`tarball project skill missing: ${projectSkill}`);
+if (!existsSync(join(consumer, ".agents", "skills", "comfy-custom-nodes", "SKILL.md"))) {
+  throw new Error("tarball project custom-node skill missing");
+}
 const agentCheck = await run(process.execPath, [binJs, "agent", "check", "--json"], {
   cwd: consumer,
   echo: true,
 });
 if (agentCheck.code !== 0) throw new Error(`cwf agent check failed\n${agentCheck.stderr}`);
 const st = JSON.parse(agentCheck.stdout.slice(agentCheck.stdout.indexOf("{")));
-if (st.status !== "current") throw new Error(`tarball agent check ${st.status}`);
+if (st.ok !== true) throw new Error(`tarball agent check not ok: ${JSON.stringify(st)}`);
+const skills = st.skills;
+if (!Array.isArray(skills) || skills.length !== 2) {
+  throw new Error(`tarball agent check expected 2 skills, got ${JSON.stringify(st)}`);
+}
+for (const row of skills) {
+  if (row.status !== "current") throw new Error(`tarball agent check ${row.skill} ${row.status}`);
+}
 
 console.log("release-tarball consumer acceptance OK");

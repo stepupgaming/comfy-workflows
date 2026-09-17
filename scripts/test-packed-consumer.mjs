@@ -56,6 +56,27 @@ function run(command, args, opts) {
   });
 }
 
+function assertAgentSkillsCurrent(json, pkgVersion) {
+  if (json.ok !== true) throw new Error(`agent report not ok: ${JSON.stringify(json)}`);
+  const skills = json.skills;
+  if (!Array.isArray(skills) || skills.length !== 2) {
+    throw new Error(`expected 2 skills, got ${JSON.stringify(json)}`);
+  }
+  const names = new Set(skills.map((s) => s.skill));
+  for (const name of ["comfy-workflows", "comfy-custom-nodes"]) {
+    if (!names.has(name)) throw new Error(`missing skill ${name} in ${JSON.stringify(json)}`);
+  }
+  for (const row of skills) {
+    if (row.status !== "current") {
+      throw new Error(`agent check ${row.skill} status ${row.status}, expected current`);
+    }
+    if (row.installed !== true) throw new Error(`agent check ${row.skill} installed !== true`);
+    if (row.coreVersion !== pkgVersion) {
+      throw new Error(`agent check ${row.skill} coreVersion ${row.coreVersion} != ${pkgVersion}`);
+    }
+  }
+}
+
 async function npm(args, cwd, echo = false) {
   const result = await run(process.execPath, [npmCli, ...args], { cwd, echo });
   if (result.code !== 0) {
@@ -139,11 +160,20 @@ const installedRoot = join(consumer, "node_modules", "@stepupgaming", "comfy-wor
 const skillMd = join(installedRoot, "skills", "comfy-workflows", "SKILL.md");
 if (!existsSync(skillMd)) throw new Error(`packed skill missing: ${skillMd}`);
 const skillBody = readFileSync(skillMd, "utf8");
-for (const needle of ["Graph IR", "ir.build.ts", "rawNode", "Do not reimplement"]) {
+for (const needle of ["Graph IR", "ir.build.ts", "Do not reimplement", "comfy-custom-nodes"]) {
   if (!skillBody.includes(needle)) throw new Error(`packed SKILL.md missing ${needle}`);
 }
 if (!existsSync(join(installedRoot, "skills", "comfy-workflows", "references", "code-first.md"))) {
   throw new Error("packed skill references missing");
+}
+const customSkillMd = join(installedRoot, "skills", "comfy-custom-nodes", "SKILL.md");
+if (!existsSync(customSkillMd)) throw new Error(`packed custom-node skill missing: ${customSkillMd}`);
+const customSkillBody = readFileSync(customSkillMd, "utf8");
+for (const needle of ["rawNode", "cwf setup", "codegen"]) {
+  if (!customSkillBody.includes(needle)) throw new Error(`packed custom-node SKILL.md missing ${needle}`);
+}
+if (!existsSync(join(installedRoot, "skills", "comfy-custom-nodes", "references", "custom-nodes.md"))) {
+  throw new Error("packed custom-node skill references missing");
 }
 
 const binJs = join(installedRoot, "dist", "cli", "bin.js");
@@ -167,6 +197,9 @@ if (!existsSync(projectSkill)) throw new Error(`project skill missing: ${project
 if (!existsSync(join(consumer, ".agents", "skills", "comfy-workflows", "references", "code-first.md"))) {
   throw new Error("project skill references missing");
 }
+if (!existsSync(join(consumer, ".agents", "skills", "comfy-custom-nodes", "SKILL.md"))) {
+  throw new Error("project custom-node skill missing");
+}
 const projectSkillBody = readFileSync(projectSkill, "utf8");
 if (!/^name:\s*comfy-workflows\s*$/m.test(projectSkillBody)) {
   throw new Error("installed project skill frontmatter name is not comfy-workflows");
@@ -180,13 +213,7 @@ if (agentCheck.code !== 0) {
   throw new Error(`cwf agent check failed\n${agentCheck.stdout}\n${agentCheck.stderr}`);
 }
 const checkJson = JSON.parse(agentCheck.stdout.slice(agentCheck.stdout.indexOf("{")));
-if (checkJson.status !== "current") {
-  throw new Error(`agent check status ${checkJson.status}, expected current`);
-}
-if (checkJson.installed !== true) throw new Error("agent check installed !== true");
 const pkgVersion = JSON.parse(readFileSync(join(installedRoot, "package.json"), "utf8")).version;
-if (checkJson.coreVersion !== pkgVersion) {
-  throw new Error(`agent check coreVersion ${checkJson.coreVersion} != ${pkgVersion}`);
-}
+assertAgentSkillsCurrent(checkJson, pkgVersion);
 
 console.log("packed-consumer acceptance OK");
