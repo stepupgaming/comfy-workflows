@@ -56,7 +56,7 @@ Node.js ≥ 22. The `cwf` CLI ships in the same package.
 | A blank project | [Code-first quickstart](https://stepupgaming.github.io/comfy-workflows/code/quickstart) |
 | Existing `workflow.json` | [Convert a workflow](https://stepupgaming.github.io/comfy-workflows/migrate/import) |
 | A product that talks to Comfy | [Product integration](https://stepupgaming.github.io/comfy-workflows/product/architecture) |
-| Custom nodes | [Codegen](https://stepupgaming.github.io/comfy-workflows/code/codegen) · [Setup](https://stepupgaming.github.io/comfy-workflows/guide/custom-nodes) |
+| Custom nodes | [Codegen](https://stepupgaming.github.io/comfy-workflows/code/codegen) · [Custom nodes](https://stepupgaming.github.io/comfy-workflows/guide/custom-nodes) |
 | API / CLI | [Reference](https://stepupgaming.github.io/comfy-workflows/reference/api/) |
 
 ## Guarantees
@@ -65,7 +65,7 @@ Node.js ≥ 22. The `cwf` CLI ships in the same package.
 - **Lossless integers.** Seeds are `bigint`; IR uses `{"$int":"..."}`; `/prompt` gets a raw numeric literal.
 - **Slot identity is `{nodeId, outputIndex}`.** Names are handle sugar.
 - **Packages are data.** `cwf inspect` / `cwf run <package>` never execute package JavaScript.
-- **`inspect` / `init` / `run` never install Python.** Only explicit `cwf setup` does, after you approve the plan.
+- **`inspect` / `init` / `run` never install Python.** This SDK does not install custom nodes. Use `comfy node install <registry-id>`.
 - **TypeScript is what you edit.** `workflow.ir.json` and API JSON are generated. [What do I edit?](https://stepupgaming.github.io/comfy-workflows/start/what-do-i-edit)
 
 ## Runtime architecture

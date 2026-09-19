@@ -17,29 +17,26 @@ cwf expose <param> --node <id> --input <name> [--required] [--description ...] [
 cwf suggest [dir] [--json]
 cwf pack [dir] [--json] [--publish]
 cwf inspect <package-or-path> [--url URL] [--json]
-cwf resolve-nodes <package-or-path> [--url URL] [--write] [--json]
-cwf node-pack add <registry-id> --provides ClassA,ClassB [--dir pkg]
-cwf setup <package-or-path> --comfy <Comfy-path> [--yes] [--dry-run] [--json]
 cwf explain <file | workflow.ts>
 cwf catalog [query] [--from catalog.json]
 cwf agent install [--project dir] [--force] [--json]
 cwf agent check [--project dir] [--json]
 ```
 
-`--json` is supported on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, `node-pack`, and `agent`.
+`--json` is supported on `init`, `suggest`, `pack`, `inspect`, and `agent`.
 
 `compile` / `validate` / `run` accept `workflow.ts`, `.ir.json`, and Comfy JSON. `--param` / `-p` is repeatable. `validate` never queues. `run` never installs Python.
 
-## Agent-safe order
+## Missing custom nodes
 
 1. `cwf inspect --json`
-2. `cwf setup --dry-run --json` if classes are missing
-3. `cwf setup --yes` **only** with explicit user intent and a real `--comfy` path
+2. If classes are missing, show `comfy node install <registry-id>` from declared `requires.nodePacks`
+3. Run `comfy node install` **only** with explicit user intent
 
-Do not run `setup --yes` as a surprise on a developer laptop.
+This SDK never installs Python. `cwf setup` was removed (`E_REMOVED_COMMAND`).
 
-`cwf catalog` searches generated node catalogs. `cwf explain` shows recipe expansion. Neither guesses ownership.
+`cwf catalog` searches generated node catalogs. `cwf explain` shows recipe expansion.
 
-Structured errors use `ComfyError.code` (`E_TYPE_MISMATCH`, `E_UNBOUND_PARAM`, `E_NODE_PACK_UNKNOWN`, …). Branch on the code, not on prose.
+Structured errors use `ComfyError.code` (`E_TYPE_MISMATCH`, `E_UNBOUND_PARAM`, …). Branch on the code, not on prose.
 
 Deeper: `_links.md` (`cli`, `errors`).

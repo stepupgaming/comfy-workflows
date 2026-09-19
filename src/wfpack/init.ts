@@ -14,7 +14,8 @@ import {
   WORKFLOW_PACKAGE_KEYWORDS,
 } from "./manifest.js";
 import { deriveNodeClasses } from "./discover.js";
-import { isCoreNodeClass } from "../deps/core.js";
+import { isCoreNodeClass } from "../defs/core.js";
+import { comfyNodeInstallCommand } from "./manifest.js";
 import { analyzePortability, type PortabilityFinding } from "./portability.js";
 import { suggestParams, type SuggestedParam } from "./suggest.js";
 import { ComfyError, ErrorCodes } from "../errors.js";
@@ -159,7 +160,7 @@ export interface InitPackageOptions {
    * package — never a hardcoded fallback.
    */
   coreVersion?: string;
-  /** Optional resolved node packs (metadata only — init never installs). */
+  /** Optional declared Comfy Registry pack ids (metadata only — init never installs). */
   nodePacks?: WorkflowNodePack[];
 }
 
@@ -277,6 +278,7 @@ function generateReadme(opts: {
             return `- \`${p.id}\`${p.version ? `@${p.version}` : ""}${classes}`;
           })
           .join("\n");
+  const installCmd = comfyNodeInstallCommand(manifest.requires.nodePacks);
   const hasCustom =
     manifest.requires.nodePacks.length > 0 || nodeClasses.some((c) => !isCoreNodeClass(c));
   const customSection = hasCustom
@@ -284,21 +286,34 @@ function generateReadme(opts: {
         "",
         "## Custom nodes",
         "",
-        packLines ? "Declared node packs:\n\n" + packLines + "\n" : "",
-        "Check:",
+        packLines ? "Declared Comfy Registry packs:\n\n" + packLines + "\n" : "",
+        "Check missing classes against a running Comfy:",
         "",
         "```sh",
         `cwf inspect ${name.npmName} --url http://127.0.0.1:8188`,
         "```",
         "",
-        "Prepare a local Comfy installation (this installs executable Python via Comfy Registry / Manager — approval required):",
-        "",
-        "```sh",
-        `cwf setup ${name.npmName} --comfy <ComfyUI-path>`,
-        "```",
-        "",
-        "`cwf run` never installs custom nodes. Unresolved classes need `cwf node-pack map` / `cwf resolve-nodes --write`. Setup asks before installing executable Python.",
-        "",
+        installCmd
+          ? [
+              "Install those packs with Comfy CLI (executable Python — only if you intend to install into your Comfy):",
+              "",
+              "```sh",
+              installCmd,
+              "```",
+              "",
+              "Restart Comfy, then inspect again. `cwf run` never installs custom nodes.",
+              "",
+            ].join("\n")
+          : [
+              "Declare Comfy Registry package ids on `requires.nodePacks`, then:",
+              "",
+              "```sh",
+              "comfy node install <registry-id>",
+              "```",
+              "",
+              "`cwf run` never installs custom nodes.",
+              "",
+            ].join("\n"),
       ].join("\n")
     : "";
 

@@ -47,10 +47,9 @@ await npm(["install", coreTgz, wfTgz, "--no-audit", "--no-fund", "--ignore-scrip
 
 const check = `
   const core = await import("@stepupgaming/comfy-workflows");
-  const deps = await import("@stepupgaming/comfy-workflows/deps");
   const recipes = await import("@stepupgaming/comfy-workflows/recipes");
   if (typeof core.workflow !== "function") throw new Error("no workflow");
-  if (typeof deps.createSetupPlan !== "function") throw new Error("no createSetupPlan");
+  if (typeof core.isCoreNodeClass !== "function") throw new Error("no isCoreNodeClass");
   const g = recipes.textToImage({ checkpoint: "x.safetensors", positivePrompt: "hi", seed: 1 });
   const r = core.compile(g);
   if (!r.ok) throw new Error("compile failed: " + JSON.stringify(r.errors));
@@ -80,7 +79,7 @@ const help = await run(
   [join(consumer, "node_modules", "@stepupgaming", "comfy-workflows", "dist", "cli", "bin.js"), "--help"],
   { cwd: consumer, echo: true },
 );
-if (help.code !== 0 || !help.stdout.includes("setup") || !help.stdout.includes("agent install")) {
+if (help.code !== 0 || !help.stdout.includes("inspect") || !help.stdout.includes("agent install")) {
   throw new Error(`cwf --help failed\n${help.stdout}\n${help.stderr}`);
 }
 

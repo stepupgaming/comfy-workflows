@@ -28,26 +28,14 @@ import {
   inferPackageName,
   loadPackageGraph,
   manifestFromGraph,
-  parseNodePack,
   suggestParams,
-  writeManifestFile,
+  comfyNodeInstallCommand,
 } from "../wfpack/index.js";
-import type { WorkflowNodePack } from "../wfpack/index.js";
 import { createClient } from "../runtime/client.js";
 import { captureLock, writeLock, readLockAt, lockDrift, type NodePackInfo } from "../lock/lock.js";
 import { explainGraph } from "../recipes/explain.js";
 import { ComfyError, ErrorCodes, isComfyError } from "../errors.js";
-import {
-  applySetupPlan,
-  assertComfyPath,
-  buildDependencyReport,
-  createRegistryClient,
-  inspectComfyTarget,
-  isCoreNodeClass,
-  mergeResolvedPacks,
-  resolveNodeClasses,
-} from "../deps/index.js";
-import { createInterface } from "node:readline";
+import { isCoreNodeClass } from "../defs/core.js";
 import type { EmitterRegistry } from "../emit-ts/emit.js";
 import { parseJsonLossless } from "../lossless-parse.js";
 import { inspectAllAgentSkills, installAllAgentSkills } from "./agent-skill.js";
@@ -55,7 +43,7 @@ import { inspectAllAgentSkills, installAllAgentSkills } from "./agent-skill.js";
 /**
  * `cwf` CLI — the scriptable surface for agents:
  *   import | snapshot | lock | codegen | compile | validate | run | catalog | explain
- *   init | expose | suggest | pack | inspect | resolve-nodes | node-pack | setup
+ *   init | expose | suggest | pack | inspect
  *
  * Failures print machine-readable JSON errors to stderr and exit non-zero.
  */
@@ -127,11 +115,6 @@ function flagList(
   return Array.isArray(v) ? v : undefined;
 }
 
-function registryFromFlags(flags: Record<string, string | boolean | string[]>) {
-  const url = flag(flags, "registry-url") ?? process.env["CWF_REGISTRY_URL"];
-  return createRegistryClient(url !== undefined ? { baseUrl: url } : {});
-}
-
 export async function cli(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   const { positional, flags } = parseArgs(rest);
@@ -162,11 +145,9 @@ export async function cli(argv: string[]): Promise<number> {
       case "inspect":
         return await cmdInspect(positional, flags);
       case "resolve-nodes":
-        return await cmdResolveNodes(positional, flags);
       case "node-pack":
-        return await cmdNodePack(positional, flags);
       case "setup":
-        return await cmdSetup(positional, flags);
+        return cmdRemovedInstaller(command);
       case "catalog":
         return await cmdCatalog(positional, flags);
       case "explain":
@@ -208,9 +189,6 @@ function printHelp(): void {
       "  cwf suggest [dir] [--json]                 # deterministic parameter suggestions (no mutation)",
       "  cwf pack [dir] [--json] [--publish]        # validate a workflow package",
       "  cwf inspect <package-or-path> [--url URL] [--json]  # inspect without running JS",
-      "  cwf resolve-nodes <package-or-path> [--url URL] [--write] [--json]",
-      "  cwf node-pack add <registry-id> --provides ClassA,ClassB [--dir pkg] [--name ...] [--version ...]",
-      "  cwf setup <package-or-path> --comfy <Comfy-path> [--yes] [--dry-run] [--json]",
       "  cwf explain <file | workflow.ts>   # what does this expand into?",
       "  cwf catalog [query] [--from catalog.json]",
       "  cwf agent install [--project dir] [--force] [--json]  # copy bundled skills to .agents/skills",
@@ -218,6 +196,20 @@ function printHelp(): void {
       "",
     ].join("\n"),
   );
+}
+
+function cmdRemovedInstaller(command: string): number {
+  const err = new ComfyError({
+    code: ErrorCodes.RemovedCommand,
+    message: `cwf ${command} was removed. Custom nodes install via Comfy Registry / comfy-cli.`,
+    hint: [
+      "comfy node install <registry-id>",
+      "Declared packs live in comfy.workflow.json → requires.nodePacks.",
+      "cwf inspect <pkg> --url … reports missing classes. It never installs Python.",
+    ].join("\n"),
+  });
+  process.stderr.write(JSON.stringify({ error: err.toJSON() }, null, 2) + "\n");
+  return 1;
 }
 
 /* ------------------------------------------------------------------ */
@@ -820,7 +812,9 @@ async function cmdInit(
     throw new Error(
       "Usage: cwf init [name] --from <workflow.json> [--out dir] [--git] [--json] [--url URL]",
     );
-  const defs = await loadDefsAny(flag(flags, "defs"));
+  const initUrl = flag(flags, "url");
+  const client = initUrl !== undefined ? createClient({ url: initUrl }) : undefined;
+  const { defs } = await loadDefsForServer(flag(flags, "defs"), initUrl, client);
   const raw = parseJsonLossless(await readFile(from, "utf8"));
   const { graph, diagnostics } = importComfyJson(raw, defs);
   const nameArg = positional[0] ?? path.basename(from);
@@ -831,22 +825,10 @@ async function cmdInit(
     if (readdirSync(dest).length > 0)
       throw new Error(`Destination ${dest} already exists and is not empty`);
   }
-  const nodeClasses = deriveNodeClasses(graph);
-  let nodePacks: WorkflowNodePack[] | undefined;
-  const initUrl = flag(flags, "url");
-  if (initUrl !== undefined) {
-    const resolved = await resolveNodeClasses({
-      nodeClasses,
-      registry: registryFromFlags(flags),
-      installedClasses: await liveClassNames(initUrl),
-    });
-    nodePacks = resolved.packs;
-  }
   const generated = generatePackage({
     name,
     graph,
     defs,
-    nodePacks,
   });
   await mkdir(dest, { recursive: true });
   for (const [rel, content] of Object.entries(generated.files)) {
@@ -891,11 +873,12 @@ async function cmdInit(
   lines.push(`  Core: ${coreCount}`);
   lines.push(`  Custom: ${customCount}`);
   if (generated.manifest.requires.nodePacks.length > 0) {
-    lines.push("  Resolved:");
+    lines.push("  Declared packs:");
     for (const p of generated.manifest.requires.nodePacks) {
-      const n = (p.provides ?? []).length;
-      lines.push(`    ${p.name ?? p.id} → ${n} class${n === 1 ? "" : "es"}`);
+      lines.push(`    ${p.id}`);
     }
+    const install = comfyNodeInstallCommand(generated.manifest.requires.nodePacks);
+    if (install) lines.push(`  ${install}`);
   }
   if (generated.portability.length > 0) {
     lines.push("");
@@ -1137,7 +1120,8 @@ async function cmdInspect(
   }));
   const nodeClasses = deriveNodeClasses(graph);
   const url = flag(flags, "url");
-  const comfyPath = flag(flags, "comfy");
+  const packs = pkg.manifest.requires.nodePacks;
+  const installCommand = comfyNodeInstallCommand(packs);
 
   let installedClasses: string[] | undefined;
   if (url !== undefined) {
@@ -1145,22 +1129,17 @@ async function cmdInspect(
     const info = await client.objectInfo();
     installedClasses = Object.keys(info);
   }
-  const report = await buildDependencyReport({
-    manifest: pkg.manifest,
-    nodeClasses,
-    packageName: typeof pkg.packageJson["name"] === "string" ? pkg.packageJson["name"] : undefined,
-    installedClasses,
-    comfyUrl: url,
-    target: comfyPath !== undefined ? inspectComfyTarget(assertComfyPath(comfyPath)) : undefined,
-    registry: registryFromFlags(flags),
-    skipLookup: url === undefined,
-  });
+  const installedSet = installedClasses !== undefined ? new Set(installedClasses) : undefined;
+  const available =
+    installedSet !== undefined ? nodeClasses.filter((c) => installedSet.has(c)) : [];
+  const missing = installedSet !== undefined ? nodeClasses.filter((c) => !installedSet.has(c)) : [];
+  const ready = installedSet !== undefined ? missing.length === 0 : undefined;
   const live =
     url !== undefined
       ? {
           url,
-          available: report.availableNodeClasses,
-          missing: report.missingNodeClasses,
+          available,
+          missing,
         }
       : undefined;
 
@@ -1178,19 +1157,13 @@ async function cmdInspect(
           templateParams: params,
           nodeClasses,
           dependencies: {
-            required: report.requiredNodeClasses.length,
-            available: report.availableNodeClasses.length,
-            missing: report.missingNodeClasses.length,
-            coreNodeClasses: report.coreNodeClasses,
-            resolvedCustomNodeClasses: report.resolvedCustomNodeClasses,
-            unknownNodeClasses: report.unknownNodeClasses,
-            ambiguousNodeClasses: report.ambiguousNodeClasses,
-            customNodeClasses: report.customNodeClasses,
-            packs: report.plan.packages,
-            unresolved: report.plan.unresolved,
-            ambiguous: report.plan.ambiguous,
-            models: report.plan.models,
-            ready: report.plan.ready,
+            required: nodeClasses.length,
+            available: available.length,
+            missing: missing.length,
+            nodePacks: packs,
+            installCommand: installCommand ?? null,
+            models: pkg.manifest.requires.models,
+            ready: ready ?? null,
           },
           ...(live !== undefined ? { live } : {}),
         },
@@ -1217,44 +1190,17 @@ async function cmdInspect(
   lines.push(`  outputs:`);
   for (const o of pkg.manifest.outputs) lines.push(`    ${o.name} : ${o.type}`);
   lines.push(
-    `  Required node classes: ${report.requiredNodeClasses.length}` +
-      (url !== undefined
-        ? `  Available: ${report.availableNodeClasses.length}  Missing: ${report.missingNodeClasses.length}`
-        : ""),
+    `  Required node classes: ${nodeClasses.length}` +
+      (url !== undefined ? `  Available: ${available.length}  Missing: ${missing.length}` : ""),
   );
   lines.push(`  requires:`);
   for (const c of nodeClasses) {
     const mark = live === undefined ? " " : live.available.includes(c) ? "✓" : "✗";
     lines.push(`    ${mark} ${c}`);
   }
-  if (report.plan.packages.length > 0) {
+  if (packs.length > 0) {
     lines.push(`  node packs:`);
-    for (const p of report.plan.packages) {
-      const status =
-        p.versionStatus === "missing"
-          ? "not installed"
-          : p.versionStatus === "incompatible"
-            ? "installed but incompatible version"
-            : p.versionStatus === "unknown"
-              ? "installed (version unknown)"
-              : "installed compatible";
-      lines.push(
-        `    ${p.id}${p.resolvedVersion ? `@${p.resolvedVersion}` : ""}  status: ${status}`,
-      );
-      if (p.provides.length > 0) lines.push(`      provides: ${p.provides.join(", ")}`);
-    }
-  }
-  if (report.plan.unresolved.length > 0) {
-    lines.push(`  unresolved classes:`);
-    for (const u of report.plan.unresolved) lines.push(`    ${u.className}`);
-  }
-  if (report.plan.ambiguous.length > 0) {
-    lines.push(`  ambiguous classes:`);
-    for (const a of report.plan.ambiguous) {
-      lines.push(
-        `    ${a.className} → ${(a.candidates ?? []).map((c) => c.id).join(", ") || "(none)"}`,
-      );
-    }
+    for (const p of packs) lines.push(`    ${p.id}${p.version ? `  (tested ${p.version})` : ""}`);
   }
   if (live !== undefined) {
     lines.push(
@@ -1262,10 +1208,12 @@ async function cmdInspect(
         ? `  live ${live.url}: all ${nodeClasses.length} node classes available`
         : `  live ${live.url}: MISSING ${live.missing.join(", ")}`,
     );
-    if (live.missing.length > 0) {
-      const pkgName = String(pkg.packageJson["name"] ?? spec);
-      lines.push(`  Setup:`);
-      lines.push(`    cwf setup ${pkgName} --comfy <ComfyUI-path>`);
+    if (live.missing.length > 0 && installCommand !== undefined) {
+      lines.push(`  Install with Comfy CLI:`);
+      lines.push(`    ${installCommand}`);
+    } else if (live.missing.length > 0) {
+      lines.push(`  Declare requires.nodePacks with Comfy Registry ids, then:`);
+      lines.push(`    comfy node install <registry-id>`);
     }
   }
   if (pkg.manifest.requires.models.length > 0) {
@@ -1275,411 +1223,6 @@ async function cmdInspect(
   }
   process.stdout.write(lines.join("\n") + "\n");
   return 0;
-}
-
-async function liveClassNames(url: string | undefined): Promise<string[] | undefined> {
-  if (url === undefined) return undefined;
-  const client = createClient({ url });
-  const info = await client.objectInfo();
-  return Object.keys(info);
-}
-
-function formatResolveText(result: {
-  missing: string[];
-  resolutions: Array<{
-    className: string;
-    kind: string;
-    pack?: { id: string; name?: string };
-    candidates?: Array<{ id: string }>;
-  }>;
-  packs: WorkflowNodePack[];
-}): string {
-  const lines: string[] = [];
-  const missingCustom = result.missing.filter((c) => !isCoreNodeClass(c));
-  if (missingCustom.length > 0) {
-    lines.push("Missing node classes:");
-    lines.push("");
-    for (const c of missingCustom) lines.push(`  ${c}`);
-    lines.push("");
-  }
-  const resolved = result.packs;
-  if (resolved.length > 0) {
-    lines.push("Resolved package:");
-    lines.push("");
-    for (const p of resolved) {
-      lines.push(`  ${p.id}${p.name && p.name !== p.id ? `  (${p.name})` : ""}`);
-      if ((p.provides ?? []).length > 0) {
-        lines.push("    provides:");
-        for (const c of p.provides ?? []) lines.push(`      ${c}`);
-      }
-      lines.push("");
-    }
-  }
-  const unknown = result.resolutions.filter((r) => r.kind === "unknown");
-  for (const u of unknown) {
-    lines.push(`E_NODE_PACK_UNKNOWN`);
-    lines.push("");
-    lines.push(`  Class:`);
-    lines.push(`    ${u.className}`);
-    lines.push("");
-    lines.push("  No registered package could be identified.");
-    lines.push("");
-  }
-  const ambiguous = result.resolutions.filter((r) => r.kind === "ambiguous");
-  for (const a of ambiguous) {
-    lines.push(`E_NODE_PACK_AMBIGUOUS`);
-    lines.push("");
-    lines.push(`  Class:`);
-    lines.push(`    ${a.className}`);
-    lines.push("");
-    lines.push("  Candidates:");
-    for (const c of a.candidates ?? []) lines.push(`    ${c.id}`);
-    lines.push("");
-  }
-  if (lines.length === 0)
-    lines.push("No custom-node packs to resolve (core classes only, or none missing).");
-  return lines.join("\n") + (lines[lines.length - 1] === "" ? "" : "\n");
-}
-
-async function cmdResolveNodes(
-  positional: string[],
-  flags: Record<string, string | boolean | string[]>,
-): Promise<number> {
-  const spec = positional[0];
-  if (spec === undefined)
-    throw new Error("Usage: cwf resolve-nodes <package-or-path> [--url URL] [--write] [--json]");
-  const pkg = discoverPackage(spec);
-  const graph = loadPackageGraph(pkg);
-  const nodeClasses = deriveNodeClasses(graph);
-  const url = flag(flags, "url");
-  const installedClasses = await liveClassNames(url);
-  const result = await resolveNodeClasses({
-    nodeClasses,
-    declaredPacks: pkg.manifest.requires.nodePacks,
-    installedClasses,
-    registry: registryFromFlags(flags),
-    missingOnly: installedClasses !== undefined,
-  });
-
-  if (flags["write"] === true) {
-    // Write only packs with positive per-version evidence. A source:"registry"
-    // claim is not proof. Already-declared packs remain via mergeResolvedPacks.
-    const verifiedIds = new Set(
-      result.resolutions
-        .filter((r) => r.kind === "resolved_custom" && r.pack?.verified === true)
-        .map((r) => r.pack!.id),
-    );
-    const verified = result.packs.filter((p) => p.source === "registry" && verifiedIds.has(p.id));
-    const next = mergeResolvedPacks(pkg.manifest, verified);
-    writeManifestFile(pkg.dir, next);
-  }
-
-  if (flags["json"] === true) {
-    process.stdout.write(
-      JSON.stringify(
-        {
-          ok: result.unknown.length === 0 && result.ambiguous.length === 0,
-          dir: pkg.dir,
-          wrote: flags["write"] === true,
-          required: result.required,
-          missing: result.missing,
-          available: result.available,
-          resolutions: result.resolutions,
-          packs: result.packs,
-          unknown: result.unknown,
-          ambiguous: result.ambiguous,
-        },
-        null,
-        2,
-      ) + "\n",
-    );
-    return result.ambiguous.length > 0 || result.unknown.length > 0 ? 1 : 0;
-  }
-  process.stdout.write(formatResolveText(result));
-  return result.ambiguous.length > 0 || result.unknown.length > 0 ? 1 : 0;
-}
-
-async function cmdNodePack(
-  positional: string[],
-  flags: Record<string, string | boolean | string[]>,
-): Promise<number> {
-  const sub = positional[0];
-  if (sub === "add") {
-    const id = positional[1];
-    const providesRaw = flag(flags, "provides");
-    if (id === undefined || providesRaw === undefined)
-      throw new Error(
-        "Usage: cwf node-pack add <registry-id> --provides FooNode,BarNode [--dir pkg] [--name ...] [--version ...] [--repository ...]",
-      );
-    const dir = flag(flags, "dir") ?? process.cwd();
-    const pkg = discoverPackage(dir);
-    const provides = providesRaw
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    const pack = parseNodePack(
-      {
-        id,
-        provides,
-        name: flag(flags, "name"),
-        version: flag(flags, "version"),
-        repository: flag(flags, "repository"),
-        source: "manual",
-      },
-      undefined,
-      2,
-    );
-    const next = mergeResolvedPacks(pkg.manifest, [pack]);
-    writeManifestFile(pkg.dir, next);
-    if (flags["json"] === true) {
-      process.stdout.write(JSON.stringify({ ok: true, dir: pkg.dir, pack }, null, 2) + "\n");
-      return 0;
-    }
-    process.stdout.write(
-      `added node pack ${pack.id} providing ${pack.provides?.join(", ") ?? "(none)"}\n`,
-    );
-    return 0;
-  }
-  if (sub === "map") {
-    const className = positional[1];
-    const id = positional[2];
-    if (className === undefined || id === undefined)
-      throw new Error("Usage: cwf node-pack map <class> <registry-id> [--dir pkg]");
-    const dir = flag(flags, "dir") ?? process.cwd();
-    const pkg = discoverPackage(dir);
-    const pack = parseNodePack({ id, provides: [className], source: "manual" }, undefined, 2);
-    const next = mergeResolvedPacks(pkg.manifest, [pack]);
-    writeManifestFile(pkg.dir, next);
-    if (flags["json"] === true) {
-      process.stdout.write(
-        JSON.stringify({ ok: true, dir: pkg.dir, className, pack }, null, 2) + "\n",
-      );
-      return 0;
-    }
-    process.stdout.write(`mapped ${className} → ${id}\n`);
-    return 0;
-  }
-  throw new Error(
-    "Usage: cwf node-pack add <id> --provides A,B  |  cwf node-pack map <class> <id>",
-  );
-}
-
-async function confirmYes(prompt: string): Promise<boolean> {
-  if (!process.stdin.isTTY) return false;
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const answer = await new Promise<string>((resolve) => {
-    rl.question(prompt, (a) => resolve(a));
-  });
-  rl.close();
-  return /^y(es)?$/i.test(answer.trim());
-}
-
-function formatSetupPlan(plan: {
-  workflow: { name: string; title: string; package?: string };
-  target?: { root: string; layout: string; url?: string };
-  toInstall: Array<{
-    id: string;
-    resolvedVersion?: string;
-    requestedVersion?: string;
-    source: string;
-    provides: string[];
-  }>;
-  alreadyInstalled: Array<{ id: string }>;
-  unresolved: Array<{ className: string }>;
-  ambiguous: Array<{ className: string; candidates?: Array<{ id: string }> }>;
-  applyBlocked?: string;
-  restartRequired: boolean;
-  ready: boolean;
-}): string {
-  const lines: string[] = [];
-  lines.push("Preparing:");
-  lines.push(`  ${plan.workflow.package ?? plan.workflow.name}`);
-  lines.push("");
-  if (plan.target) {
-    lines.push("Target:");
-    lines.push(`  ${plan.target.root}${plan.target.url ? `  (${plan.target.url})` : ""}`);
-    lines.push("");
-  }
-  if (plan.toInstall.length === 0) {
-    lines.push("Will install:");
-    lines.push("  (nothing)");
-    lines.push("");
-  } else {
-    lines.push("Will install:");
-    lines.push("");
-    for (const p of plan.toInstall) {
-      const ver = p.resolvedVersion ?? p.requestedVersion ?? "latest";
-      lines.push(`  ${p.id}@${ver}`);
-      lines.push(`    source: ${p.source === "registry" ? "Comfy Registry" : p.source}`);
-      if (p.provides.length > 0) {
-        lines.push("    provides:");
-        for (const c of p.provides) lines.push(`      ${c}`);
-      }
-      lines.push("");
-    }
-  }
-  if (plan.unresolved.length > 0) {
-    lines.push("Unresolved classes (will not be installed):");
-    for (const u of plan.unresolved) lines.push(`  ${u.className}`);
-    lines.push("");
-  }
-  if (plan.ambiguous.length > 0) {
-    lines.push("Ambiguous classes (will not be installed):");
-    for (const a of plan.ambiguous) {
-      lines.push(`  ${a.className}: ${(a.candidates ?? []).map((c) => c.id).join(", ")}`);
-    }
-    lines.push("");
-  }
-  if (plan.applyBlocked) {
-    lines.push(plan.applyBlocked);
-    lines.push("");
-  }
-  return lines.join("\n");
-}
-
-async function cmdSetup(
-  positional: string[],
-  flags: Record<string, string | boolean | string[]>,
-): Promise<number> {
-  const spec = positional[0];
-  const comfyPath = flag(flags, "comfy");
-  const url = flag(flags, "url");
-  if (spec === undefined)
-    throw new Error(
-      "Usage: cwf setup <package-or-path> --comfy <Comfy-install-path> [--yes] [--dry-run] [--json] [--url URL]",
-    );
-  const pkg = discoverPackage(spec);
-  const graph = loadPackageGraph(pkg);
-  const nodeClasses = deriveNodeClasses(graph);
-  const installedClasses = await liveClassNames(url);
-  const target =
-    comfyPath !== undefined ? inspectComfyTarget(assertComfyPath(comfyPath)) : undefined;
-  const report = await buildDependencyReport({
-    manifest: pkg.manifest,
-    nodeClasses,
-    packageName: typeof pkg.packageJson["name"] === "string" ? pkg.packageJson["name"] : undefined,
-    installedClasses,
-    comfyUrl: url,
-    target,
-    registry: registryFromFlags(flags),
-  });
-  const plan = report.plan;
-  const dryRun = flags["dry-run"] === true;
-  const asJson = flags["json"] === true;
-  const yes = flags["yes"] === true;
-
-  if (asJson && (dryRun || !yes)) {
-    process.stdout.write(
-      JSON.stringify(
-        {
-          ok: plan.ready && plan.toInstall.length === 0,
-          dryRun: dryRun || !yes,
-          alreadyInstalled: plan.alreadyInstalled,
-          toInstall: plan.toInstall,
-          unresolved: plan.unresolved,
-          ambiguous: plan.ambiguous,
-          failed: plan.failed,
-          restartRequired: plan.restartRequired,
-          ready: plan.ready,
-          availabilityKnown: plan.availabilityKnown,
-          applyBlocked: plan.applyBlocked ?? null,
-          models: plan.models,
-          missingNodeClasses: plan.missingNodeClasses,
-        },
-        null,
-        2,
-      ) + "\n",
-    );
-    if (dryRun) return plan.ambiguous.length > 0 || plan.unresolved.length > 0 ? 1 : 0;
-    return 0;
-  }
-
-  if (!asJson) {
-    process.stdout.write(formatSetupPlan(plan));
-    if (plan.toInstall.length > 0) {
-      process.stdout.write(
-        "This installs executable Python code into the target Comfy environment.\n\n",
-      );
-    }
-  }
-
-  if (dryRun) {
-    if (!asJson) process.stdout.write("Dry run — nothing installed.\n");
-    return plan.ambiguous.length > 0 || (plan.unresolved.length > 0 && plan.toInstall.length === 0)
-      ? 1
-      : 0;
-  }
-
-  if (plan.toInstall.length === 0) {
-    if (!asJson) {
-      process.stdout.write(
-        plan.ready
-          ? "Already prepared — no custom-node installs required.\n"
-          : "Nothing to install. Unresolved or ambiguous classes remain — see above.\n",
-      );
-    }
-    return plan.ready ? 0 : 1;
-  }
-
-  if (plan.applyBlocked) {
-    throw new ComfyError({
-      code: ErrorCodes.SetupNotApplicable,
-      message: plan.applyBlocked,
-      hint: "Pass --comfy <local-ComfyUI-path> to apply a plan against a local install.",
-    });
-  }
-  if (target === undefined) {
-    throw new ComfyError({
-      code: ErrorCodes.SetupNotApplicable,
-      message: "cwf setup requires --comfy <Comfy-install-path> to apply an install plan.",
-    });
-  }
-
-  let approved = yes;
-  if (!approved) {
-    approved = await confirmYes("Continue? [y/N] ");
-  }
-  if (!approved) {
-    throw new ComfyError({
-      code: ErrorCodes.SetupDeclined,
-      message: "Setup declined — nothing was installed.",
-    });
-  }
-
-  const applied = await applySetupPlan({ plan, target, yes: true, dryRun: false });
-  if (asJson) {
-    process.stdout.write(
-      JSON.stringify(
-        {
-          ok: applied.plan.failed.length === 0,
-          alreadyInstalled: applied.plan.alreadyInstalled,
-          toInstall: applied.plan.toInstall,
-          unresolved: applied.plan.unresolved,
-          ambiguous: applied.plan.ambiguous,
-          failed: applied.plan.failed,
-          restartRequired: applied.plan.restartRequired,
-          ready: applied.plan.ready,
-          availabilityKnown: applied.plan.availabilityKnown,
-          results: applied.results,
-        },
-        null,
-        2,
-      ) + "\n",
-    );
-    return applied.plan.failed.length === 0 ? 0 : 1;
-  }
-  if (applied.plan.failed.length > 0) {
-    process.stdout.write("Failed:\n");
-    for (const f of applied.plan.failed) process.stdout.write(`  ${f.id}\n`);
-  }
-  const installed = applied.results.filter((r) => r.ok && !r.skipped);
-  if (installed.length > 0) {
-    process.stdout.write("Installed:\n");
-    for (const r of installed) process.stdout.write(`  ${r.id}\n`);
-    process.stdout.write("\n");
-    process.stdout.write("ComfyUI must be restarted before these nodes become available.\n");
-  }
-  return applied.plan.failed.length === 0 ? 0 : 1;
 }
 
 async function cmdExplain(
@@ -1789,5 +1332,7 @@ async function cmdAgent(
     }
     return 0;
   }
-  throw new Error("Usage: cwf agent install [--project dir] [--force] [--json]  |  cwf agent check [--project dir] [--json]");
+  throw new Error(
+    "Usage: cwf agent install [--project dir] [--force] [--json]  |  cwf agent check [--project dir] [--json]",
+  );
 }

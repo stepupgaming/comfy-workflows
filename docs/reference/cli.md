@@ -4,15 +4,15 @@ The `cwf` CLI (`comfy-workflows` is an alias) mirrors the SDK. JSON on stdout wh
 
 ## Agent-safe usage
 
-Prefer read-only JSON before anything that installs Python:
+Prefer read-only JSON. This CLI never installs Python.
 
 ```sh
 cwf inspect --json
-cwf setup --dry-run --json
 cwf suggest --json
 cwf pack --json
-cwf resolve-nodes --json
 ```
+
+If inspect reports missing classes, print `comfy node install <registry-id>` from declared `requires.nodePacks`. Run that command only with explicit user intent.
 
 ### `cwf agent`
 
@@ -23,9 +23,11 @@ cwf agent check [--project dir] [--json]
 
 Copies the bundled skill from the **installed** package into `<project>/.agents/skills/comfy-workflows/`. No network. No symlinks. `--force` is required if the destination has local edits. `check` reports `missing` / `current` / `outdated` / `modified`. Default project is the current working directory.
 
-`--json` is supported on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, `node-pack`, and `agent`. Success JSON goes to **stdout**. Failures are `{ "error": { "code": "E_…", … } }` on **stderr** and a non-zero exit.
+`--json` is supported on `init`, `suggest`, `pack`, `inspect`, and `agent`. Success JSON goes to **stdout**. Failures are `{ "error": { "code": "E_…", … } }` on **stderr** and a non-zero exit.
 
-Do not run `cwf setup --yes` unless the user named a Comfy directory and asked to install. `inspect`, `explain`, and `catalog` do not guess and do not execute package JavaScript. `run` never installs Python. Compile is deterministic.
+`inspect`, `explain`, and `catalog` do not guess and do not execute package JavaScript. `run` never installs Python. Compile is deterministic.
+
+`cwf setup`, `cwf resolve-nodes`, and `cwf node-pack` were removed (`E_REMOVED_COMMAND`).
 
 This help text is generated from `src/cli/cli.ts` (`pnpm docs:gen`). If a command is missing here, `docs:check` fails.
 
@@ -57,11 +59,7 @@ Accept `workflow.ts`, `.ir.json`, and Comfy JSON. `--lock` / `comfy.lock.json` �
 
 ### `cwf init` / `expose` / `suggest` / `pack` / `inspect`
 
-See [Convert a workflow](/migrate/import).
-
-### `cwf resolve-nodes` / `node-pack` / `setup`
-
-See [Custom nodes](/guide/custom-nodes).
+See [Convert a workflow](/migrate/import). Inspect vs live `/object_info`: [Custom nodes](/guide/custom-nodes).
 
 ### `cwf explain` / `cwf catalog`
 

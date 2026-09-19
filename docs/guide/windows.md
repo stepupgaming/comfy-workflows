@@ -10,14 +10,12 @@ PowerShell and Git Bash both work. Quote paths with spaces.
 
 ```powershell [PowerShell]
 cwf snapshot --url http://127.0.0.1:8188 -o object_info.json
-cwf setup . --comfy "C:\ComfyUI"
-cwf setup . --comfy "C:\Program Files\ComfyUI"
+cwf inspect . --url http://127.0.0.1:8188
 ```
 
 ```sh [shell]
 cwf snapshot --url http://127.0.0.1:8188 -o object_info.json
-cwf setup . --comfy /c/ComfyUI
-cwf setup . --comfy "/c/Program Files/ComfyUI"
+cwf inspect . --url http://127.0.0.1:8188
 ```
 
 :::
@@ -33,7 +31,7 @@ C:\ComfyUI\
   ComfyUI\custom_nodes\
 ```
 
-or `main.py` next to `python_embeded`. `cwf setup --comfy` uses `python_embeded\python.exe` when present. If Python cannot be established: `E_COMFY_PYTHON_UNKNOWN`.
+or `main.py` next to `python_embeded`. Custom-node install is Comfy CLI / Manager (`comfy node install`), not this SDK.
 
 ## Node.js
 

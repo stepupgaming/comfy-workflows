@@ -44,8 +44,8 @@ export interface WorkflowManifestOutput {
  * package id (`id`) whenever one exists. specVersion 1 may still list a
  * bare string; the parser normalizes those to `{ id, source: "manual" }`.
  *
- * `repository` is informational / fallback metadata — never an instruction
- * to clone an arbitrary URL.
+ * Packs are a shopping list for `comfy node install <id>`. This SDK never
+ * installs Python. `repository` is informational — never a clone instruction.
  */
 export interface WorkflowNodePack {
   /** Canonical Comfy Registry / Manager package id, e.g. "comfyui-videohelpersuite". */
@@ -73,8 +73,9 @@ export interface WorkflowManifestRequires {
    */
   nodeClasses: string[];
   /**
-   * Installable custom-node packs. In-memory always objects.
+   * Declared Comfy Registry pack ids. In-memory always objects.
    * Wire format: specVersion 1 = string ids; specVersion 2 = objects.
+   * Authors write these; consumers install with `comfy node install <id>`.
    */
   nodePacks: WorkflowNodePack[];
   /** Model/checkpoint requirements, when known. Informational — no downloader. */
@@ -236,8 +237,7 @@ export function parseNodePack(
 ): WorkflowNodePack {
   const where = index === undefined ? "nodePack" : `requires.nodePacks[${index}]`;
   if (typeof value === "string") {
-    if (specVersion === 2)
-      fail(`${where} must be an object in specVersion 2 (got a string id)`);
+    if (specVersion === 2) fail(`${where} must be an object in specVersion 2 (got a string id)`);
     if (value.length === 0) fail(`${where} must be a non-empty string`);
     if (!PACK_ID.test(value))
       fail(`${where} id "${value}" is not a valid Comfy Registry package id`);
@@ -296,10 +296,7 @@ export function parseNodePack(
 }
 
 /** Serialize a pack list for writing back to comfy.workflow.json. */
-export function serializeNodePacks(
-  packs: WorkflowNodePack[],
-  specVersion: 1 | 2 = 2,
-): unknown[] {
+export function serializeNodePacks(packs: WorkflowNodePack[], specVersion: 1 | 2 = 2): unknown[] {
   if (specVersion === 1) return packs.map((p) => p.id);
   return packs.map((p) => {
     const o: Record<string, unknown> = { id: p.id };
@@ -317,4 +314,21 @@ export function serializeNodePacks(
 export function promoteManifestToV2(manifest: WorkflowManifest): WorkflowManifest {
   if (manifest.specVersion === 2) return manifest;
   return { ...manifest, specVersion: 2 };
+}
+
+/**
+ * Suggested Comfy CLI install line for declared Registry ids.
+ * Ids only — manifest `version` ranges are "tested with", not passed through.
+ * Returns undefined when there are no packs.
+ */
+export function comfyNodeInstallCommand(packs: WorkflowNodePack[]): string | undefined {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const p of packs) {
+    if (p.id.length === 0 || seen.has(p.id)) continue;
+    seen.add(p.id);
+    ids.push(p.id);
+  }
+  if (ids.length === 0) return undefined;
+  return `comfy node install ${ids.join(" ")}`;
 }

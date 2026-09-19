@@ -30,8 +30,7 @@ Envelope warnings (not compiler codes): `E_LOCK_DRIFT`, `E_LIVE_DEFS_UNAVAILABLE
 
 | Symptom | What to run | Likely cause |
 | ------- | ----------- | ------------ |
-| Node class missing | `cwf inspect . --url URL` | Class not in live `/object_info`. Install pack or recapture snapshot. |
-| Custom pack unknown | `cwf resolve-nodes . --url URL` | No verified Registry owner. Manual `cwf node-pack add`, or the class is actually core. |
+| Node class missing | `cwf inspect . --url URL` | Class not in live `/object_info`. `comfy node install <registry-id>` or recapture snapshot. |
 | Lock drift | `cwf lock --url URL` after reviewing diff | Comfy or custom nodes changed. Update snapshot + codegen on purpose. |
 | Generated types stale | `cwf codegen --from object_info.json -o …` | You installed a pack and did not regenerate. |
 | `E_TYPE_MISMATCH` | `cwf explain file` | Wrong handle. Check `.MODEL` vs `.CLIP`. Use `unsafe` only if the node lies. |
@@ -40,7 +39,7 @@ Envelope warnings (not compiler codes): `E_LOCK_DRIFT`, `E_LIVE_DEFS_UNAVAILABLE
 | Path not portable | `cwf pack` → `E_PACK_LOCAL_PATH` | `cwf expose … --required`. Do not publish `C:\Users\…`. |
 | Runtime Comfy error | read `E_NODE_EXECUTION_ERROR` / `nodeErrors` | Missing model, OOM, node bug. Graph compiled; Comfy failed. |
 | Package validates, model missing | `requires.models` is informational | Place the checkpoint yourself. No downloader. |
-| Pack installed, still failing | `ready: false`, `restartRequired` | Restart Comfy, then `inspect --url` until classes show ✓. |
+| Pack installed, still failing | `ready: false` | Restart Comfy, then `inspect --url` until classes show ✓. |
 
 ## Branching
 

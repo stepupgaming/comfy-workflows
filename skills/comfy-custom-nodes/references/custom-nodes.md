@@ -1,6 +1,6 @@
 # Custom nodes
 
-This SDK **consumes** `/object_info`. It does not author Python node implementations.
+This SDK **consumes** `/object_info`. It does not author Python node implementations. It does not install them.
 
 ## Authoring (typed)
 
@@ -27,29 +27,22 @@ Do not invent `class_type`. If codegen did not emit it, snapshot again.
 
 Identity is the Registry package id (example `comfyui-videohelpersuite`), not a GitHub URL.
 
-Resolution (`cwf resolve-nodes`) is deterministic. No LLM. A pack is accepted only after the **selected version's** node definitions list the class. Ambiguous → report, do not auto-pick. Unknown → not installable.
-
-`UNKNOWN` is not `CUSTOM`.
-
-## Setup / security
+## Missing classes
 
 ```sh
-cwf inspect <pkg> --json
-cwf resolve-nodes <pkg> --url http://127.0.0.1:8188 --json
-cwf setup <pkg> --comfy <Comfy-path> --dry-run --json
+cwf inspect <pkg> --url http://127.0.0.1:8188 --json
 ```
 
-Install only after the user names a Comfy directory and asks to apply:
+If the user asked to install:
 
 ```sh
-cwf setup <pkg> --comfy <Comfy-path> --yes
+comfy node install <registry-id>
 ```
 
 Rules:
 
 - `run` / `inspect` / `init` never install Python
-- Default confirmation is No
-- `--yes` approves a **verified** plan, not arbitrary git/pip
+- Do not run `comfy node install` without user intent
 - Manifests have no shell/pip/git command fields
 - `repository` is informational; never clone it automatically
 - Models are not auto-downloaded

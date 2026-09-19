@@ -41,7 +41,7 @@ cwf init @alice/portrait --from workflow.json
 
 Comfy Workflows will not put you in `@stepupgaming` unless you type that scope.
 
-`--url` optionally discovers Comfy Registry node-pack metadata. It never installs Python. `--git` runs `git init` in the new directory. `--json` prints the same report for scripts.
+`--url` fetches live `/object_info` so import can decode custom-node widgets. It never installs Python. `--git` runs `git init` in the new directory. `--json` prints the same report for scripts.
 
 ## 3. Or import without packaging
 

@@ -50,10 +50,9 @@ await npm(["install", coreSpec, workflowSpec, "--no-audit", "--no-fund", "--igno
 
 const check = `
   const core = await import(${JSON.stringify(coreName)});
-  const deps = await import(${JSON.stringify(coreName + "/deps")});
   const recipes = await import(${JSON.stringify(coreName + "/recipes")});
   if (typeof core.workflow !== "function") throw new Error("no workflow");
-  if (typeof deps.createSetupPlan !== "function") throw new Error("no createSetupPlan");
+  if (typeof core.isCoreNodeClass !== "function") throw new Error("no isCoreNodeClass");
   const g = recipes.textToImage({ checkpoint: "x.safetensors", positivePrompt: "hi", seed: 1 });
   const r = core.compile(g);
   if (!r.ok) throw new Error("compile failed: " + JSON.stringify(r.errors));
@@ -79,7 +78,7 @@ if (inspect.code !== 0) {
 }
 
 const help = await run(process.execPath, [binJs, "--help"], { cwd: consumer, echo: true, env });
-if (help.code !== 0 || !help.stdout.includes("setup")) {
+if (help.code !== 0 || !help.stdout.includes("inspect")) {
   throw new Error(`cwf --help failed\n${help.stdout}\n${help.stderr}`);
 }
 

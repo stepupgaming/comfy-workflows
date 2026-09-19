@@ -125,11 +125,9 @@ await npm(
 
 const check = `
   const core = await import("@stepupgaming/comfy-workflows");
-  const deps = await import("@stepupgaming/comfy-workflows/deps");
   const recipes = await import("@stepupgaming/comfy-workflows/recipes");
   if (typeof core.workflow !== "function") throw new Error("no workflow");
-  if (typeof deps.createSetupPlan !== "function") throw new Error("no createSetupPlan");
-  if (typeof deps.resolveNodeClasses !== "function") throw new Error("no resolveNodeClasses");
+  if (typeof core.isCoreNodeClass !== "function") throw new Error("no isCoreNodeClass");
   const g = recipes.textToImage({ checkpoint: "x.safetensors", positivePrompt: "hi", seed: 1 });
   const r = core.compile(g);
   if (!r.ok) throw new Error("compile failed: " + JSON.stringify(r.errors));
@@ -169,7 +167,7 @@ if (!existsSync(join(installedRoot, "skills", "comfy-workflows", "references", "
 const customSkillMd = join(installedRoot, "skills", "comfy-custom-nodes", "SKILL.md");
 if (!existsSync(customSkillMd)) throw new Error(`packed custom-node skill missing: ${customSkillMd}`);
 const customSkillBody = readFileSync(customSkillMd, "utf8");
-for (const needle of ["rawNode", "cwf setup", "codegen"]) {
+for (const needle of ["rawNode", "comfy node install", "codegen"]) {
   if (!customSkillBody.includes(needle)) throw new Error(`packed custom-node SKILL.md missing ${needle}`);
 }
 if (!existsSync(join(installedRoot, "skills", "comfy-custom-nodes", "references", "custom-nodes.md"))) {
@@ -179,10 +177,13 @@ if (!existsSync(join(installedRoot, "skills", "comfy-custom-nodes", "references"
 const binJs = join(installedRoot, "dist", "cli", "bin.js");
 const help = await run(process.execPath, [binJs, "--help"], { cwd: consumer, echo: true });
 if (help.code !== 0) throw new Error(`cwf --help failed\n${help.stderr}`);
-for (const needle of ["setup", "resolve-nodes", "agent install"]) {
+for (const needle of ["inspect", "codegen", "agent install"]) {
   if (!help.stdout.includes(needle)) {
     throw new Error(`cwf --help missing ${needle}\n${help.stdout}`);
   }
+}
+if (/\bcwf setup\b/.test(help.stdout) || help.stdout.includes("resolve-nodes")) {
+  throw new Error(`cwf --help still lists removed installer commands\n${help.stdout}`);
 }
 
 const agentInstall = await run(process.execPath, [binJs, "agent", "install", "--json"], {

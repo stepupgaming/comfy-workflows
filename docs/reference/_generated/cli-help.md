@@ -15,9 +15,6 @@ cwf — code-first, typed, composable workflows for ComfyUI
   cwf suggest [dir] [--json]                 # deterministic parameter suggestions (no mutation)
   cwf pack [dir] [--json] [--publish]        # validate a workflow package
   cwf inspect <package-or-path> [--url URL] [--json]  # inspect without running JS
-  cwf resolve-nodes <package-or-path> [--url URL] [--write] [--json]
-  cwf node-pack add <registry-id> --provides ClassA,ClassB [--dir pkg] [--name ...] [--version ...]
-  cwf setup <package-or-path> --comfy <Comfy-path> [--yes] [--dry-run] [--json]
   cwf explain <file | workflow.ts>   # what does this expand into?
   cwf catalog [query] [--from catalog.json]
   cwf agent install [--project dir] [--force] [--json]  # copy bundled skills to .agents/skills

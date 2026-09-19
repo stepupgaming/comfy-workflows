@@ -23,13 +23,6 @@
 | `E_TIMEOUT` | Run did not complete within the configured timeout. |
 | `E_CONNECTION_FAILED` | Transport-level failure talking to the Comfy instance. |
 | `E_UNSUPPORTED_FEATURE` | Imported workflow uses a construct the importer cannot represent yet. |
-| `E_NODE_PACK_AMBIGUOUS` | Multiple verified registry packs provide the same node class. |
-| `E_NODE_PACK_UNKNOWN` | No verified registered pack could be identified for a node class. |
-| `E_INVALID_NODE_PACK` | Node-pack metadata in the manifest is invalid. |
-| `E_NODE_PACK_VERSION_UNSATISFIED` | Declared version range matches no active Registry version. |
-| `E_COMFY_PYTHON_UNKNOWN` | Target Comfy Python interpreter could not be established. |
-| `E_SETUP_DECLINED` | User declined the setup plan (or non-interactive without --yes). |
-| `E_SETUP_NOT_APPLICABLE` | Setup cannot be applied (remote URL, missing Comfy path, missing installer). |
-| `E_SETUP_FAILED` | Official installer returned a failure. |
+| `E_REMOVED_COMMAND` | CLI command that used to exist (setup / resolve-nodes / node-pack). |
 | `E_AGENT_SKILL_MISSING` | Bundled skill is missing from the installed package. |
 | `E_AGENT_SKILL_MODIFIED` | Project skill copy has local edits; --force required to overwrite. |

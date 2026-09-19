@@ -6,7 +6,7 @@ description: >
   ir.build.ts / workflow.ts, Graph IR, ParamRef, recipes, cwf compile /
   validate / run / pack, and non-Node product binders. Trigger on workflow.json
   conversion, "edit the graph", topology vs runtime params, or "do we need Node
-  in production?" Custom nodes, codegen, and cwf setup: skill comfy-custom-nodes.
+  in production?" Custom nodes and codegen: skill comfy-custom-nodes.
 ---
 
 # Comfy Workflows
@@ -27,17 +27,17 @@ Versioned deep-doc links for **this package version** are in `references/_links.
 
 ## Choose the task
 
-| User intent | Read |
-| ----------- | ---- |
-| Existing `workflow.json` / API JSON | `references/import-existing.md` |
-| Create or edit a code-authored graph | `references/code-first.md` |
-| Custom nodes, missing classes, codegen, `cwf setup` | skill `comfy-custom-nodes` |
-| Rust / Python / Go / C# product | `references/product-integration.md` |
-| Package / publish | `references/packages.md` |
-| CLI / `--json` | `references/cli.md` |
-| Seeds, ParamRef, runtime values | `references/parameters.md` |
-| Errors, uncertainty | `references/troubleshooting.md` |
-| Mental model | `references/mental-model.md` |
+| User intent                            | Read                                |
+| -------------------------------------- | ----------------------------------- |
+| Existing `workflow.json` / API JSON    | `references/import-existing.md`     |
+| Create or edit a code-authored graph   | `references/code-first.md`          |
+| Custom nodes, missing classes, codegen | skill `comfy-custom-nodes`          |
+| Rust / Python / Go / C# product        | `references/product-integration.md` |
+| Package / publish                      | `references/packages.md`            |
+| CLI / `--json`                         | `references/cli.md`                 |
+| Seeds, ParamRef, runtime values        | `references/parameters.md`          |
+| Errors, uncertainty                    | `references/troubleshooting.md`     |
+| Mental model                           | `references/mental-model.md`        |
 
 Do not scrape rendered VitePress HTML when these files or raw Markdown links exist.
 
@@ -70,7 +70,7 @@ A Python/Rust binder replaces `{"$param":"..."}`. It does not grow graphs.
 
 ## Custom nodes
 
-Load skill `comfy-custom-nodes`. Snapshot + codegen + `g.add`. `rawNode` is not the default. `cwf setup` is the only installer.
+Load skill `comfy-custom-nodes`. Snapshot + codegen + `g.add`. `rawNode` is not the default. Install packs with `comfy node install` only if the user asked.
 
 ## Non-Node products
 
@@ -83,13 +83,11 @@ Node is required for authoring and CI. Node is **not** required as a production 
 ## Security
 
 - Workflow packages are **data**. `cwf inspect` / package discovery for `run` must not execute package JavaScript.
-- `inspect`, `init`, and `run` never install Python.
-- Only `cwf setup` installs custom nodes, after a printed plan.
-- Default confirmation is No. Do **not** run `cwf setup --yes` unless the user explicitly asked to install into a named Comfy directory.
-- Prefer `cwf inspect --json` and `cwf setup --dry-run --json` first.
+- `inspect`, `init`, and `run` never install Python. This SDK does not install custom nodes.
+- Missing packs: `cwf inspect --json`, then `comfy node install <registry-id>` only if the user asked.
 - Manifests have no `install` / `script` / `shell` / `pip` / `git` command fields. `repository` is not a clone instruction.
 - Models are not auto-downloaded.
-- Registry mapping must be version-verified. Do not invent it.
+- Do not invent `class_type` names or GitHub owners.
 
 ## Distribution
 
@@ -134,19 +132,19 @@ That is a **different graph**. Author another builder / package (or a real `if` 
 
 ## When uncertain
 
-| Symptom | Do |
-| ------- | -- |
-| Unknown node class / missing pack | Skill `comfy-custom-nodes`. Do not guess names or clone GitHub. |
-| Type mismatch | Read declared input/output types. `unsafe` only with explicit user intent. |
-| Need Python/Rust in production | Generated artifact + narrow binder. Not a new compiler. |
-| Seed > 2^53 | `bigint` / `{"$int":"..."}`. Never `Number` / `JSON.parse` the compiled prompt. |
-| User asks where to edit a generated file | Point at `ir.build.ts` / `workflow.ts`. Refuse to patch IR. |
+| Symptom                                  | Do                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------- |
+| Unknown node class / missing pack        | Skill `comfy-custom-nodes`. Do not guess names or clone GitHub.                 |
+| Type mismatch                            | Read declared input/output types. `unsafe` only with explicit user intent.      |
+| Need Python/Rust in production           | Generated artifact + narrow binder. Not a new compiler.                         |
+| Seed > 2^53                              | `bigint` / `{"$int":"..."}`. Never `Number` / `JSON.parse` the compiled prompt. |
+| User asks where to edit a generated file | Point at `ir.build.ts` / `workflow.ts`. Refuse to patch IR.                     |
 
 ## CLI habits
 
 JSON on stdout when `--json` is passed. Errors are JSON on stderr. Exit non-zero on failure.
 
-Commands with `--json`: `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup` (and `node-pack` subcommands).
+Commands with `--json`: `init`, `suggest`, `pack`, `inspect`, and `agent`.
 
 `cwf catalog` and `cwf explain` are read-only discovery.
 

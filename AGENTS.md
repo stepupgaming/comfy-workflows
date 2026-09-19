@@ -1,6 +1,6 @@
 # Agent instructions for this repository
 
-You are modifying **Comfy Workflows** (`@stepupgaming/comfy-workflows`), a TypeScript SDK and `cwf` CLI. This file is for work **in this repo**. If you are using the SDK in another project, read `skills/comfy-workflows/SKILL.md` (graphs) and `skills/comfy-custom-nodes/SKILL.md` (codegen / setup).
+You are modifying **Comfy Workflows** (`@stepupgaming/comfy-workflows`), a TypeScript SDK and `cwf` CLI. This file is for work **in this repo**. If you are using the SDK in another project, read `skills/comfy-workflows/SKILL.md` (graphs) and `skills/comfy-custom-nodes/SKILL.md` (codegen).
 
 Unofficial project. Not affiliated with or endorsed by Comfy Org. MIT. Do not publish a `comfy` binary.
 
@@ -31,7 +31,7 @@ Do not:
 - Hand-edit generated `workflow.ir.json`, `comfy.workflow.json` (except intentional manifest metadata), or typed node SDK files under `src/nodes/gen`
 - Invent `class_type` names or custom-node ownership from filenames
 - Implement another Graph IR compiler (including in Python/Rust/Go)
-- Silently install executable custom-node Python (`inspect` / `init` / `run` never install; only `cwf setup` does)
+- Silently install executable custom-node Python (`inspect` / `init` / `run` never install; this SDK does not install custom nodes)
 - Make npmjs a release prerequisite
 - Put GitHub-specific distribution fields into Graph IR
 - Treat `rawNode` as the normal custom-node path (codegen from `/object_info` is)
@@ -81,7 +81,6 @@ CI also requires:
 | Compiler | `src/compile/` |
 | Runtime client | `src/runtime/` |
 | Workflow packages | `src/wfpack/`, `packages/` |
-| Custom-node resolution | `src/deps/` |
 | CLI | `src/cli/` |
 | Codegen | `src/codegen/`, `src/emit-ts/` |
 | Bundled generated nodes | `src/nodes/gen/` (do not hand-edit) |
@@ -102,7 +101,7 @@ Read the matching docs. Do not copy the site into this file.
 | ------ | ---------- |
 | Workflow authoring / IR | `docs/concepts/mental-model.md`, `docs/code/build-a-graph.md` |
 | Parameters / templates | `docs/code/parameters.md`, `docs/concepts/templates.md` |
-| Custom nodes / setup | `docs/guide/custom-nodes.md`, `src/deps/AGENTS.md` |
+| Custom nodes | `docs/guide/custom-nodes.md`, `docs/guide/consume-vs-author-nodes.md` |
 | Non-Node products | `docs/product/build-time-vs-runtime.md`, `docs/concepts/no-second-compiler.md` |
 | Packages | `packages/AGENTS.md`, `docs/concepts/packages.md` |
 | Distribution | `docs/product/distribution.md` |
@@ -116,4 +115,4 @@ GitHub Release + GitHub Packages are canonical. npmjs is an optional mirror and 
 
 ## Security
 
-Workflow packages are data. `cwf inspect` must not execute package JavaScript. Custom-node install executes Python and requires explicit `cwf setup` after a printed plan. Models are not auto-downloaded. Manifests have no shell/pip/git command fields.
+Workflow packages are data. `cwf inspect` must not execute package JavaScript. This SDK never installs custom-node Python; users run `comfy node install` themselves. Models are not auto-downloaded. Manifests have no shell/pip/git command fields.

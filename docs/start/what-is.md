@@ -10,7 +10,7 @@ You write typed node graphs (or import JSON you already have). The SDK compiles 
 
 It is not a replacement for ComfyUI. It does not author Python custom nodes. It does not download models. It is not "a CLI that converts some JSON."
 
-Official Comfy clients focus on talking to a running instance. This project focuses on the graph itself: types, import, compile, packages, and environment setup.
+Official Comfy clients focus on talking to a running instance. This project focuses on the graph itself: types, import, compile, and packages.
 
 ## Why not edit Comfy JSON?
 

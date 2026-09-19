@@ -5,7 +5,7 @@ Three different surfaces. Do not collapse them.
 | Who | File | Job |
 | --- | ---- | --- |
 | Agent modifying this repository | [AGENTS.md](https://github.com/stepupgaming/comfy-workflows/blob/main/AGENTS.md) | Repo invariants, commands, source map |
-| Agent using the SDK in another app | Skills in the installed package: `skills/comfy-workflows/` (graphs) and `skills/comfy-custom-nodes/` (codegen / setup) | Operating manuals + progressive references |
+| Agent using the SDK in another app | Skills in the installed package: `skills/comfy-workflows/` (graphs) and `skills/comfy-custom-nodes/` (codegen) | Operating manuals + progressive references |
 | Agent that found the docs site | [llms.txt](/llms.txt) | Routing to raw Markdown |
 
 Deeper single-file digest: [llms-full.txt](/llms-full.txt). Discovery JSON: [agent-index.json](/agent-index.json).
@@ -34,7 +34,7 @@ That writes `.agents/skills/comfy-workflows/` and `.agents/skills/comfy-custom-n
 
 Some clients also have their own skill directories. The portable project location this command uses is `.agents/skills/`.
 
-`comfy-workflows` teaches: edit TypeScript not generated IR, topology vs ParamRef, no second compiler, packages. `comfy-custom-nodes` teaches: snapshot + codegen, `rawNode` as escape hatch, Registry resolution, explicit `cwf setup`.
+`comfy-workflows` teaches: edit TypeScript not generated IR, topology vs ParamRef, no second compiler, packages. `comfy-custom-nodes` teaches: snapshot + codegen, `rawNode` as escape hatch, declare Registry ids, `comfy node install` only with user intent.
 
 Deep human-doc links from an **installed** skill pin the matching git tag (`references/_links.md`) so an old package does not point at newer APIs. The live `llms.txt` on this site tracks `main`.
 
@@ -48,21 +48,19 @@ Each rendered page also exposes `rel="alternate"` `text/markdown` and a “View 
 
 ## JSON CLI
 
-Do not have an agent run `cwf setup --yes` on a laptop as a surprise.
+Do not have an agent run `comfy node install` on a laptop as a surprise.
 
 Prefer:
 
 ```sh
 cwf inspect --json
-cwf setup --dry-run --json
 cwf suggest --json
 cwf pack --json
-cwf resolve-nodes --json
 ```
 
-before any install.
+If classes are missing, print `comfy node install <registry-id>` from declared packs. Install only with user intent.
 
-- `--json` on `init`, `suggest`, `pack`, `inspect`, `resolve-nodes`, `setup`, `node-pack`
+- `--json` on `init`, `suggest`, `pack`, `inspect`, `agent`
 - Success JSON on **stdout**; every error is JSON on **stderr** with `ComfyError.code`
 - `inspect` / `explain` / `catalog` do not guess and do not execute package JavaScript
 - `run` never installs Python
@@ -73,8 +71,8 @@ Full command list: [CLI reference](/reference/cli). Error codes: [errors](/refer
 ## Security agents get wrong
 
 - Workflow packages are data
-- Custom-node install executes Python and needs explicit user intent
-- Registry mapping must be verified; do not guess from GitHub names
+- Custom-node install executes Python and needs explicit user intent (`comfy node install`)
+- Do not guess pack owners from GitHub names
 - Models are not auto-downloaded
 - `rawNode` does not download code
 - Release host is unrelated to graph semantics

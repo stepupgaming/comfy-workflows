@@ -28,7 +28,6 @@ const customSkillMd = join(customSkillDir, "SKILL.md");
 const requiredRoot = [
   "AGENTS.md",
   "docs/AGENTS.md",
-  "src/deps/AGENTS.md",
   "packages/AGENTS.md",
   "skills/comfy-workflows/SKILL.md",
   "skills/comfy-custom-nodes/SKILL.md",
@@ -143,7 +142,6 @@ const skillFiles = [
 const agentFacing = [
   join(root, "AGENTS.md"),
   join(root, "docs", "AGENTS.md"),
-  join(root, "src", "deps", "AGENTS.md"),
   join(root, "packages", "AGENTS.md"),
   join(root, "docs", "guide", "agents.md"),
   join(root, "docs", "public", "llms.txt"),
@@ -179,12 +177,12 @@ function teachesRawNodeDefault(text) {
   return /rawnode is (the )?(default|normal|primary) custom-node/i.test(text);
 }
 
-function teachesAutoSetupYes(text) {
+function teachesCwfSetupInstaller(text) {
   const lines = text.split(/\r?\n/);
   for (const line of lines) {
-    if (!/setup --yes/i.test(line)) continue;
-    const negated = /\b(do not|don't|never|not |unless|only if|only with|without user)\b/i.test(line);
-    if (!negated && /run `?cwf setup --yes/i.test(line)) return line;
+    if (!/cwf setup/i.test(line)) continue;
+    if (/\b(removed|was removed|no longer|deleted|do not|don't|never)\b/i.test(line)) continue;
+    return line;
   }
   return null;
 }
@@ -198,8 +196,8 @@ for (const file of agentFacing) {
   if (hasPositiveNpmCanonical(text)) fail(`${rel} teaches npm as canonical`);
   if (teachesSecondCompiler(text)) fail(`${rel} teaches a second compiler`);
   if (teachesRawNodeDefault(text)) fail(`${rel} teaches rawNode as default custom-node API`);
-  const autoYes = teachesAutoSetupYes(text);
-  if (autoYes) fail(`${rel} instructs setup --yes: ${autoYes.slice(0, 120)}`);
+  const setup = teachesCwfSetupInstaller(text);
+  if (setup) fail(`${rel} still teaches cwf setup as the installer: ${setup.slice(0, 120)}`);
 }
 
 for (const file of skillFiles) {
@@ -218,7 +216,7 @@ for (const file of skillFiles) {
 const requiredPhrases = [
   [skillText, "Graph IR", "SKILL.md"],
   [skillText, "rawNode", "SKILL.md"],
-  [skillText, "setup", "SKILL.md"],
+  [skillText, "comfy node install", "SKILL.md"],
   [skillText, "GitHub", "SKILL.md"],
   [await readFile(join(skillDir, "references", "product-integration.md"), "utf8"), "compiler", "product-integration.md"],
   [await readFile(join(customSkillDir, "references", "custom-nodes.md"), "utf8"), "inspect", "custom-nodes.md"],

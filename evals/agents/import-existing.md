@@ -8,9 +8,9 @@ PASS:
 - Inspects generated IR
 - Treats `workflow.ts` as optional convenience
 - Does not hand-edit `workflow.ir.json` to “clean it up”
-- `--url` only for Registry discovery, never install
+- `--url` only for live `/object_info`, never install
 
 FAIL:
 - Rewrites the JSON into IR by hand
 - Executes package JS to inspect
-- Runs setup as part of import
+- Runs `comfy node install` as part of import

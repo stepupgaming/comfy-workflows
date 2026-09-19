@@ -1,17 +1,17 @@
 ---
 name: comfy-custom-nodes
 description: >
-  Use when adding, typing, resolving, or installing ComfyUI custom nodes for
+  Use when adding, typing, or declaring ComfyUI custom nodes for
   @stepupgaming/comfy-workflows: /object_info snapshot, cwf codegen, g.add of
-  generated specs, rawNode escape hatch, inspect / resolve-nodes / setup,
-  Registry vs manual node packs. Trigger on missing class_type, UNKNOWN node,
-  VHS_LoadVideo, custom_nodes, cwf setup, codegen wrappers. Not for writing
+  generated specs, rawNode escape hatch, inspect missing classes, Comfy
+  Registry ids on requires.nodePacks. Trigger on missing class_type, UNKNOWN
+  node, VHS_LoadVideo, custom_nodes, codegen wrappers. Not for writing
   Python NODE_CLASS_MAPPINGS. Use comfy-workflows for graph topology.
 ---
 
 # Comfy custom nodes
 
-This SDK **consumes** `/object_info`. It does not author Python custom-node implementations.
+This SDK **consumes** `/object_info`. It does not author Python custom-node implementations. It does not install them.
 
 Ship path: `node_modules/@stepupgaming/comfy-workflows/skills/comfy-custom-nodes/`. Run `cwf agent install` so agents discover it at `.agents/skills/comfy-custom-nodes/`.
 
@@ -37,49 +37,34 @@ Read `references/custom-nodes.md`.
 
 ## Package dependencies
 
-- `requires.nodeClasses` — `class_type` names the graph uses.
+- `requires.nodeClasses` — `class_type` names the graph uses. `cwf pack` checks this against IR.
 - `requires.nodePacks` — Comfy Registry ids that provide those classes (example `comfyui-videohelpersuite`), not GitHub URLs.
 
-`cwf resolve-nodes` is deterministic. No LLM. A pack is installable only after the **selected version's** definitions list the class.
+Authors write Registry ids. `cwf pack` warns if the graph uses non-core classes and `nodePacks` is empty.
 
-| Outcome | Meaning |
-| ------- | ------- |
-| `CORE` | Stock class. Never installed as a custom pack. |
-| `RESOLVED_CUSTOM` | Exactly one verified pack/version. |
-| `AMBIGUOUS` | More than one verified pack. Author picks. |
-| `UNKNOWN` | No verified provider. Not "definitely custom". |
-
-`UNKNOWN` is not `CUSTOM`. Ambiguous stays ambiguous.
-
-Only verified Registry mappings belong as `source: "registry"`. Product-specific classes stay `source: "manual"` and are not auto-installed.
-
-## Setup / security
+## Missing classes on a live Comfy
 
 ```sh
-cwf inspect <pkg> --json
-cwf resolve-nodes <pkg> --url http://127.0.0.1:8188 --json
-cwf setup <pkg> --comfy <Comfy-path> --dry-run --json
+cwf inspect <pkg> --url http://127.0.0.1:8188 --json
 ```
 
-Install only after the user names a Comfy directory and asks to apply:
+Inspect reports missing classes. It never installs Python.
+
+If the user asked to install into their Comfy, they run Comfy CLI:
 
 ```sh
-cwf setup <pkg> --comfy <Comfy-path> --yes
+comfy node install <registry-id>
 ```
 
-- `run` / `inspect` / `init` never install Python
-- Default confirmation is No
-- `--yes` approves a **verified** plan, not arbitrary git/pip
-- Manifests have no shell/pip/git command fields
-- `repository` is informational; never clone it
-- Models are not auto-downloaded
-- Package JS is never executed to read dependency metadata
+Restart Comfy, recapture `/object_info` if authoring types, then codegen.
+
+Do **not** run `comfy node install` unless the user explicitly asked to install. Do not clone `repository`. `cwf setup` was removed.
 
 ## When uncertain
 
-| Symptom | Do |
-| ------- | -- |
-| Unknown class | Snapshot `/object_info`. Do not guess the name. |
-| Generated wrapper missing a class | Recapture + codegen. Then `rawNode` only if still absent. |
-| Missing custom pack | `inspect --json`, `resolve-nodes --json`, `setup --dry-run --json`. Do not `--yes` without user intent. |
-| User wants a new Python node | Wrong project. Write a Comfy custom-node repo, then wrap it here. |
+| Symptom                           | Do                                                                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Unknown class                     | Snapshot `/object_info`. Do not guess the name.                                                            |
+| Generated wrapper missing a class | Recapture + codegen. Then `rawNode` only if still absent.                                                  |
+| Missing custom pack               | `inspect --json`. Show `comfy node install <id>` from declared `nodePacks`. Install only with user intent. |
+| User wants a new Python node      | Wrong project. Write a Comfy custom-node repo, then `comfy node publish`.                                  |

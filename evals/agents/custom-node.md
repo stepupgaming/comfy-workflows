@@ -13,4 +13,4 @@ PASS:
 FAIL:
 - Guesses a GitHub repo and clones it
 - Treats `rawNode` as the default
-- Runs `setup --yes` when the class is already installed
+- Runs `comfy node install` when the class is already installed

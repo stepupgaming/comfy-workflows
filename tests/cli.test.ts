@@ -27,12 +27,13 @@ const jsonOf = <T>(stdout: string): T => {
 };
 
 describe("CLI", () => {
-  it("help lists setup and resolve-nodes", async () => {
+  it("help lists inspect and does not list removed installer commands", async () => {
     const { stdout, code } = await comfy(["help"]);
     expect(code).toBe(0);
-    expect(stdout).toContain("cwf setup");
-    expect(stdout).toContain("cwf resolve-nodes");
-    expect(stdout).toContain("cwf node-pack");
+    expect(stdout).toContain("cwf inspect");
+    expect(stdout).not.toContain("cwf setup");
+    expect(stdout).not.toContain("cwf resolve-nodes");
+    expect(stdout).not.toContain("cwf node-pack");
   });
 
   it("catalog finds nodes by substring", async () => {

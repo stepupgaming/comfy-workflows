@@ -46,4 +46,4 @@ If a live fetch was requested and failed, the CLI warns `E_LIVE_DEFS_UNAVAILABLE
 
 `--url https://some-host` is fine for snapshot, inspect, validate, and run (if that host accepts `/prompt`).
 
-`cwf setup` **cannot** install custom nodes on a remote you do not have a filesystem for. `--url` without `--comfy` plans and stops. There is no remote shell. [Setup](/product/setup).
+This SDK cannot install custom nodes on a remote you do not have a filesystem for. There is no remote shell. Install packs on that machine with Comfy CLI / Manager. [Custom nodes](/guide/custom-nodes).

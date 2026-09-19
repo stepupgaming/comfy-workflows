@@ -81,7 +81,7 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "nodePacks": {
-          "description": "Installable custom-node packs. specVersion 1: string registry ids. specVersion 2: NodePackRequirement objects. repository is informational — never an automatic git clone.",
+          "description": "Declared Comfy Registry pack ids for comfy node install. specVersion 1: string ids. specVersion 2: NodePackRequirement objects. repository is informational — never an automatic git clone.",
           "type": "array",
           "items": {
             "oneOf": [

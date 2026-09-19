@@ -8,7 +8,7 @@
 - HTTP+WS runtime, asset staging, `run.json` replay
 - `comfy.lock.json` drift warnings
 - Workflow packages: manifest, `cwf pack` / `inspect` / `run <package>`
-- Custom-node resolve + explicit `cwf setup` (never from `run`)
+- Custom-node **declaration** (`requires.nodePacks` Registry ids). Install is `comfy node install`; this SDK never installs Python. `cwf setup` / `resolve-nodes` / `node-pack` were removed.
 - First-party packages `@stepupgaming/comfy-workflow-t2i` and `…-hires`
 - GitHub-canonical distribution (Packages + Release tarballs); npmjs as optional mirror
 - Recipes: `textToImage`, `img2img`, `inpaint`, `outpaint`, `withLora`, `withControlNet`, `hiresFix`, `upscale`

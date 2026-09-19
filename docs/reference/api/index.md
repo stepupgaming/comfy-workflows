@@ -10,7 +10,6 @@ Package: `@stepupgaming/comfy-workflows` (current docs built against the repo's 
 | `/ir` | Graph IR types and operations |
 | `/runtime` | `createClient`, assets |
 | `/wfpack` | Manifest, discover, pack helpers |
-| `/deps` | Registry resolve + setup planning |
 | `/schema` | `comfy.workflow.schema.json` |
 
 Do not dump generated per-node pages into the sidebar. Search [Node catalog](/reference/node-catalog) / `cwf catalog` instead.
@@ -22,7 +21,6 @@ Curated modules:
 - [IR API](/reference/api/ir)
 - [Runtime API](/reference/api/runtime)
 - [Workflow package API](/reference/api/wfpack)
-- [Dependency / setup API](/reference/api/deps)
 - [Recipes](/reference/recipes)
 - [CLI](/reference/cli)
 - [Error codes](/reference/errors)

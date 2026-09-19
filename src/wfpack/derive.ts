@@ -1,6 +1,6 @@
 import type { Graph } from "../ir/types.js";
 import { templateParams } from "../ir/template.js";
-import { isCoreNodeClass } from "../deps/core.js";
+import { isCoreNodeClass } from "../defs/core.js";
 import type { WorkflowManifest } from "./manifest.js";
 import { deriveNodeClasses } from "./discover.js";
 import { exposeNameForPath, findLocalPathFindings } from "./portability.js";
@@ -115,24 +115,13 @@ export function checkPackageCoherence(manifest: WorkflowManifest, graph: Graph):
       `Make this portable with:\n    cwf expose ${exposeNameForPath(f.input)} --node ${f.nodeId} --input ${f.input} --required`,
     );
 
-  // --- custom-node provenance ---
-  const provided = new Set<string>();
-  for (const p of manifest.requires.nodePacks) {
-    if (p.source === "registry" && (p.provides ?? []).length === 0) {
-      warn(
-        "W_PACK_NODE_PACK_NO_PROVIDES",
-        `Registry pack "${p.id}" declares no provides[] classes.`,
-        "Record the classes it supplies, or run `cwf resolve-nodes . --url … --write`.",
-      );
-    }
-    for (const c of p.provides ?? []) provided.add(c);
-  }
-  const unresolvedCustom = derived.filter((c) => !isCoreNodeClass(c) && !provided.has(c));
-  if (unresolvedCustom.length > 0)
+  // --- custom-node packs (declared Registry ids; this SDK does not install) ---
+  const nonCore = derived.filter((c) => !isCoreNodeClass(c));
+  if (nonCore.length > 0 && manifest.requires.nodePacks.length === 0)
     warn(
       "W_PACK_UNRESOLVED_NODE_PACK",
-      `Required node classes have no owning node pack metadata (not proof they are custom):\n    ${unresolvedCustom.join("\n    ")}`,
-      "Resolve verified packs with:\n    cwf resolve-nodes . --url http://127.0.0.1:8188 --write",
+      `Graph uses classes not in the bundled core snapshot, and requires.nodePacks is empty:\n    ${nonCore.join("\n    ")}`,
+      "Declare Comfy Registry package ids on requires.nodePacks. Install with:\n    comfy node install <registry-id>",
     );
 
   return {

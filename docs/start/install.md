@@ -6,7 +6,7 @@
 - npm, pnpm, or yarn
 - A ComfyUI instance you can reach (the docs use `http://127.0.0.1:8188`)
 
-You do not need Comfy running to **author** or **compile** against a saved snapshot. You need it to snapshot, lock, run, and `setup`.
+You do not need Comfy running to **author** or **compile** against a saved snapshot. You need it to snapshot, lock, and run.
 
 ## Install the core
 
@@ -80,21 +80,7 @@ No npmjs. No GitHub Packages PAT. Details: [Distribution](/product/distribution)
 
 ## Windows notes
 
-PowerShell and Git Bash both work. Quote paths that contain spaces:
-
-::: code-group
-
-```powershell [PowerShell]
-cwf setup .\my-workflow --comfy "C:\Program Files\ComfyUI"
-```
-
-```sh [shell]
-cwf setup ./my-workflow --comfy "/c/Program Files/ComfyUI"
-```
-
-:::
-
-Portable Windows Comfy uses `python_embeded\python.exe`. `cwf setup --comfy` looks there. Do not assume WSL. Details: [Windows](/guide/windows).
+PowerShell and Git Bash both work. Quote paths that contain spaces. Do not assume WSL. Details: [Windows](/guide/windows).
 
 ## First-party workflow packages
 

@@ -31,10 +31,6 @@
       "types": "./dist/wfpack/index.d.ts",
       "default": "./dist/wfpack/index.js"
     },
-    "./deps": {
-      "types": "./dist/deps/index.d.ts",
-      "default": "./dist/deps/index.js"
-    },
     "./schema": "./schema/comfy.workflow.schema.json",
     "./package.json": "./package.json",
     "./recipes": {

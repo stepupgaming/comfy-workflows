@@ -22,11 +22,6 @@ Generated from `src/errors.ts`. Meanings below are the source comments.
 | `E_UNBOUND_PARAM` / `E_UNBOUND_PORT` | Pass bindings or defaults |
 | `E_UNRESOLVED_BYPASS` | `g.setBypassMap` |
 | `E_MUTED_CONSUMED` | Unmute or disconnect |
-| `E_NODE_PACK_AMBIGUOUS` | `cwf node-pack add` / pick a provider |
-| `E_NODE_PACK_UNKNOWN` | Manual map, or the class is core/unregistered |
-| `E_NODE_PACK_VERSION_UNSATISFIED` | Relax the range or publish that version |
-| `E_COMFY_PYTHON_UNKNOWN` | Pass `--comfy` at the tree that has Python |
-| `E_SETUP_DECLINED` | Answer y or pass `--yes` |
-| `E_SETUP_NOT_APPLICABLE` | Local `--comfy` required to apply |
+| `E_REMOVED_COMMAND` | `cwf setup` / `resolve-nodes` / `node-pack` were removed. Use `comfy node install <id>` |
 
 [Debugging](/guide/errors)

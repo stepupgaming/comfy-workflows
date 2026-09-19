@@ -15,6 +15,6 @@ If you are converting JSON **and** you later want to own the graph in TypeScript
 
 ## Custom nodes, two jobs
 
-Consuming custom nodes: snapshot the live instance, generate wrappers, declare Registry packs, run `cwf setup` after you approve the plan.
+Consuming custom nodes: snapshot the live instance, generate wrappers, declare Registry packs, install with `comfy node install` if the user asked.
 
 Writing Python node implementations: that is Comfy / a custom-node repo. This SDK does not generate Python nodes. [Custom node development vs consumption](/guide/consume-vs-author-nodes).

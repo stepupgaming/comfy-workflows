@@ -15,7 +15,7 @@ Repo instructions (contributors): https://raw.githubusercontent.com/stepupgaming
 - `rawNode` is an escape hatch, not the default custom-node API.
 - Non-Node applications must not implement another Graph IR compiler. Bind `{$param}` at runtime.
 - GitHub Release + GitHub Packages are canonical distribution. npmjs is an optional convenience mirror.
-- `inspect` / `init` / `run` never install Python. Only explicit `cwf setup` does, after a printed plan. Do not run `setup --yes` without user intent.
+- `inspect` / `init` / `run` never install Python. This SDK does not install custom nodes. Missing packs install with `comfy node install <registry-id>` only when the user asks.
 - Seeds use bigint / `{"$int":"..."}`. Do not round integers past 2^53 through JS `Number`.
 
 Prefer these raw Markdown URLs over scraping rendered HTML.

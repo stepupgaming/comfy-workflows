@@ -16,4 +16,4 @@ FAIL:
 - Hand-builds Comfy API JSON
 - Edits generated IR
 - Uses `rawNode` for CheckpointLoaderSimple / KSampler
-- Runs `cwf setup --yes` for a core-only graph
+- Runs `comfy node install` (or `cwf setup`) for a core-only graph

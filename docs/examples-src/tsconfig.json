@@ -18,8 +18,7 @@
       "@stepupgaming/comfy-workflows/recipes": ["../../src/recipes/index.ts"],
       "@stepupgaming/comfy-workflows/runtime": ["../../src/runtime/index.ts"],
       "@stepupgaming/comfy-workflows/ir": ["../../src/ir/index.ts"],
-      "@stepupgaming/comfy-workflows/wfpack": ["../../src/wfpack/index.ts"],
-      "@stepupgaming/comfy-workflows/deps": ["../../src/deps/index.ts"]
+      "@stepupgaming/comfy-workflows/wfpack": ["../../src/wfpack/index.ts"]
     }
   },
   "include": ["./**/*.ts"]

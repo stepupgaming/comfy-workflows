@@ -17,20 +17,14 @@ That boundary is why third-party workflow packages can be listed without running
 Custom nodes are executable Python. Installing them is equivalent to running someone else's code inside Comfy.
 
 - `inspect` / `init` / `run` never install
-- Only `cwf setup` installs, after a printed plan
-- Default confirmation is No
-- `--yes` still refuses UNKNOWN, AMBIGUOUS, unverified, and version-unsatisfied packs
+- This SDK never installs Python
+- Users install with `comfy node install <registry-id>` (Comfy Registry / Manager)
 - No arbitrary git/pip from manifests
-- No shell strings; Manager argv is an array
 - `repository` is informational
 
 ## `rawNode`
 
 Names a class the type system does not know. The implementation still has to exist in Comfy. `rawNode` is not a download primitive.
-
-## Remote setup
-
-`--url` without `--comfy` cannot apply installs. No remote shell.
 
 ## Models
 

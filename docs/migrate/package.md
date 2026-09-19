@@ -27,7 +27,7 @@ cwf run @stepupgaming/comfy-workflow-t2i --url http://127.0.0.1:8188 \
   --param prompt="a lighthouse at dusk" --param seed=42
 ```
 
-If inspect reported missing custom nodes, run `cwf setup` first. `cwf run` will not install them.
+If inspect reported missing custom nodes, install them with `comfy node install <registry-id>`. `cwf run` will not install them.
 
 ## Publish
 

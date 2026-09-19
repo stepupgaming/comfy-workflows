@@ -32,7 +32,7 @@ workflows/
 - CI rebuilds `workflow.ir.json` + manifest and fails on drift
 - The application runtime selects a **package** and binds `{$param}` values
 - No host-language topology
-- `cwf setup` is a documented, explicit ops step
+- Custom-node install is an explicit ops step (`comfy node install`)
 
 ## Binding rule that saved the migration
 
@@ -46,7 +46,7 @@ The production worker can stay Python or Rust. It loads generated artifacts, bin
 
 ## Custom nodes
 
-Declare packs in the manifest. Resolve with `cwf resolve-nodes`. Install with `cwf setup` on the machine that owns the Comfy tree. Restart. Re-inspect. Then run.
+Declare Registry ids on the manifest. Install with `comfy node install` on the machine that owns the Comfy tree. Restart. Re-inspect. Then run.
 
 ## What to copy
 

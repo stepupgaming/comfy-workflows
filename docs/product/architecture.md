@@ -63,7 +63,7 @@ Image, video, and speech installs are different node universes. Snapshot each. G
 - Types
 - Deterministic compile
 - Manifest / inspect
-- Verified custom-node setup (explicit `cwf setup` only)
+- Declared Registry pack ids (install is Comfy CLI)
 
 ## Case study
 

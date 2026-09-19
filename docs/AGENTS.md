@@ -19,12 +19,12 @@ pnpm docs:check
 pnpm agent:check
 ```
 
-`docs-check` fails on stale package names, old core versions listed as current, and committed npm tokens. `agent:check` fails if agent-facing files teach generated-JSON editing, npm-as-canonical, a second compiler, or automatic `setup --yes`.
+`docs-check` fails on stale package names, old core versions listed as current, and committed npm tokens. `agent:check` fails if agent-facing files teach generated-JSON editing, npm-as-canonical, a second compiler, or this SDK installing custom-node Python.
 
 ## Agent surfaces that are not this site
 
 - Repo contributors: root `AGENTS.md`
-- SDK users in another app: `skills/comfy-workflows/SKILL.md` (graphs) and `skills/comfy-custom-nodes/SKILL.md` (codegen / setup)
+- SDK users in another app: `skills/comfy-workflows/SKILL.md` (graphs) and `skills/comfy-custom-nodes/SKILL.md` (codegen)
 - Do not collapse those into VitePress pages.
 
 The human page for people configuring agents is `docs/guide/agents.md`.

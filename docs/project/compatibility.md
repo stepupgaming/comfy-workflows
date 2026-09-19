@@ -4,7 +4,7 @@
 
 - Node.js ≥ 22
 - ComfyUI as an HTTP+WS backend (docs use 0.3x-era `/object_info` / `/prompt` / `/history`)
-- Windows, macOS, Linux. Portable Windows Python is supported for `cwf setup`.
+- Windows, macOS, Linux. Portable Windows Comfy is a first-class layout for snapshots and runs.
 
 ## Core versioning
 

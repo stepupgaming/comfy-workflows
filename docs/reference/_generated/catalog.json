@@ -1,6 +1,6 @@
 {
   "version": "0.2.16",
-  "generatedAt": "2026-09-17T05:40:42.167Z",
+  "generatedAt": "2026-09-19T18:11:06.213Z",
   "errorCodes": [
     "E_UNKNOWN_NODE_TYPE",
     "E_MISSING_INPUT",
@@ -23,14 +23,7 @@
     "E_TIMEOUT",
     "E_CONNECTION_FAILED",
     "E_UNSUPPORTED_FEATURE",
-    "E_NODE_PACK_AMBIGUOUS",
-    "E_NODE_PACK_UNKNOWN",
-    "E_INVALID_NODE_PACK",
-    "E_NODE_PACK_VERSION_UNSATISFIED",
-    "E_COMFY_PYTHON_UNKNOWN",
-    "E_SETUP_DECLINED",
-    "E_SETUP_NOT_APPLICABLE",
-    "E_SETUP_FAILED",
+    "E_REMOVED_COMMAND",
     "E_AGENT_SKILL_MISSING",
     "E_AGENT_SKILL_MODIFIED"
   ],
@@ -47,9 +40,6 @@
     "suggest",
     "pack",
     "inspect",
-    "resolve-nodes",
-    "node-pack",
-    "setup",
     "explain",
     "catalog",
     "agent"

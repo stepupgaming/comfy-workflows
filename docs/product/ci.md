@@ -22,4 +22,4 @@ pnpm --filter comfy-workflows-docs docs:build
 
 ## What not to automate
 
-`cwf setup` installs executable Python. Do not run it as a surprise side effect of `test` or `run`. Nightly environment rebuilds can call setup with `--yes` on a disposable VM after printing the plan.
+This SDK never installs executable Python. Do not run `comfy node install` as a surprise side effect of `test` or `run`. Nightly environment rebuilds can call Comfy CLI on a disposable VM with explicit intent.
